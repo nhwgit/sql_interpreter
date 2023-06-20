@@ -6,7 +6,7 @@ public class Main {
 		String [] partialSql = totalSql.split(";");
 		for(String command:partialSql) {
 			command = command.trim();
-			Handler handler = new Handler(command);
+			Handler handler = new Handler(command+";");
 			handler.interpreter();
 		}
 	}
