@@ -14,7 +14,6 @@ public class Handler {
 	public void interpreter() {
 		int index = sql.indexOf(" ");
 		String command = sql.substring(0, index).toUpperCase();
-		System.out.println(command);
 		switch(command) {
 			case "CREATE": new DDL().createCommand(sql); break;
 			case "ALTER": new DDL().alterCommand(sql); break;
