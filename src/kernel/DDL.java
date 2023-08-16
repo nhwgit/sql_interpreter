@@ -9,6 +9,7 @@ import dataStructure.Table;
 import dataStructure.Tuple;
 import exception.FileAlreadyExistenceException;
 import exception.NotSupportedTypeException;
+import exception.WrongGrammerException;
 
 public class DDL {
 	public void createCommand(String cmd) {
@@ -46,60 +47,67 @@ public class DDL {
 	private Table createTableLogic(String cmd) {
 		Table table = new Table();
 		String [] columns = cmd.split(",");
-		for(String column:columns) {
-			String [] item = column.split("\\s");
-			String field = null;
-			String type = null;
-			int typeSize = 0;
-			boolean allowNull = true;
-			ForeignKey infoForeignKey = null;
-			field = item[0];
-			int openParenPosition = item[1].indexOf("(");
-			int closeParenPosition = item[1].indexOf(")");
-			if(openParenPosition == -1 || closeParenPosition == -1) {
-				type = item[1];
-				typeSize = 20;
-			}
-			else {
-				type = item[1].substring(openParenPosition);
-				typeSize = Integer.parseInt(item[1].substring(openParenPosition+1, closeParenPosition));
-			}
-			for(int i=2; i<item.length; i++) { // not null, pk, fk등
-				if(i < item.length-1) {
-					String command = item[i] + " " + item[i+1].toUpperCase();
-					switch(command) {
-					case "NOT NULL":
-						allowNull = false; i++;
-						break;
-					case "PRIMARY KEY":
-						table.setPrimaryKey(field); i++;
-						break;
-					case "FOREIGN KEY":
-						i+=2;
-						if(item[i].equalsIgnoreCase("REFERENCES")); {
-							i++;
-							int openParenPosition2 = item[i].indexOf("(");
-							int closeParenPosition2 = item[i].indexOf(")");
-							String refTable = item[i].substring(openParenPosition2);
-							String refColumn = item[i].substring(openParenPosition2+1, closeParenPosition2);
-							String deleteRule = "SET NULL";
-							i++;
-							if(i<=item.length && (item[i]+" "+ item[i+1]).equalsIgnoreCase("ON DELETE")) {
-								i+=2;
-								if(item[i].equalsIgnoreCase("CASCADE"))
-									deleteRule = "CASCADE";
-								else if((item[i] + " "+ item[i+1]).equalsIgnoreCase("SET NULL"))
-									deleteRule = "SET NULL";
-							}
-							infoForeignKey = new ForeignKey(refTable, refColumn, deleteRule);
-						}
-						break;
-					case ");":
-					};
+		try {
+			for(String column:columns) {
+				String [] item = column.split("\\s");
+				String field = null;
+				String type = null;
+				int typeSize = 0;
+				boolean allowNull = true;
+				ForeignKey infoForeignKey = null;
+				field = item[0];
+				int openParenPosition = item[1].indexOf("(");
+				int closeParenPosition = item[1].indexOf(")");
+				if(openParenPosition == -1 || closeParenPosition == -1) {
+					type = item[1];
+					typeSize = 20;
 				}
-				table.insertTuple(new Tuple(field, type, typeSize, allowNull, infoForeignKey));
+				else {
+					type = item[1].substring(openParenPosition);
+					typeSize = Integer.parseInt(item[1].substring(openParenPosition+1, closeParenPosition));
+				}
+				for(int i=2; i<item.length; i++) { // not null, pk, fk등
+					if(i < item.length-1) {
+						String command = item[i] + " " + item[i+1].toUpperCase();
+						switch(command) {
+						case "NOT NULL":
+							allowNull = false; i++;
+							break;
+						case "PRIMARY KEY":
+							table.setPrimaryKey(field); i++;
+							break;
+						case "FOREIGN KEY":
+							i+=2;
+							if(item[i].equalsIgnoreCase("REFERENCES")); {
+								i++;
+								int openParenPosition2 = item[i].indexOf("(");
+								int closeParenPosition2 = item[i].indexOf(")");
+								String refTable = item[i].substring(openParenPosition2);
+								String refColumn = item[i].substring(openParenPosition2+1, closeParenPosition2);
+								String deleteRule = "SET NULL";
+								i++;
+								if(i<=item.length && (item[i]+" "+ item[i+1]).equalsIgnoreCase("ON DELETE")) {
+									i+=2;
+									if(item[i].equalsIgnoreCase("CASCADE"))
+										deleteRule = "CASCADE";
+									else if((item[i] + " "+ item[i+1]).equalsIgnoreCase("SET NULL"))
+										deleteRule = "SET NULL";
+								}
+								infoForeignKey = new ForeignKey(refTable, refColumn, deleteRule);
+							}
+							break;
+						case ");":
+							break;
+						default:
+							throw new WrongGrammerException();
+
+						};
+					}
+					table.insertTuple(new Tuple(field, type, typeSize, allowNull, infoForeignKey));
+				}
+			} catch(ArrayIndexOutOfBoundsException e) {
+				e.printStackTrace();
 			}
-		}
 		return table;
 	}
 

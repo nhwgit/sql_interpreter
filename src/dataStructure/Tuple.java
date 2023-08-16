@@ -13,4 +13,24 @@ public class Tuple implements java.io.Serializable {
 		this.typeSize = typeSize;
 		this.allowNull = allowNull;
 	}
+
+	public String getField() {
+		return field;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public int getTypeSize() {
+		return typeSize;
+	}
+
+	public boolean getAllowNull() {
+		return allowNull;
+	}
+
+	public ForeignKey getInfoForeignKey() {
+		return infoForeignKey;
+	}
 }

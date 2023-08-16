@@ -17,4 +17,18 @@ public class ForeignKey{
 		else if(dRule.equalsIgnoreCase("CASCADE")) this.dRule = DeleteRule.CASCADE;
 		else; // 예외처리
 	}
+
+	public String getRefTable() {
+		return refTable;
+	}
+
+	public String getRefColumn() {
+		return refColumn;
+	}
+
+	public String getdRule() {
+		if(dRule == DeleteRule.SET_NULL) return "SET NULL";
+		else if(dRule == DeleteRule.CASCADE) return "CASCADE";
+		return null;
+	}
 }
