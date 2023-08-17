@@ -18,6 +18,8 @@ public class Main {
 			Handler handler = new Handler(command);
 			handler.interpreter();
 		}
+
+		//테스트용
 		try(ObjectInputStream oi =
 			new ObjectInputStream(new FileInputStream("NewBook.bin"))) {
 			Table table = (Table)oi.readObject();
