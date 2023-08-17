@@ -11,11 +11,11 @@ public class Main {
 		String totalSql = "CREATE TABLE NewBook(\r\n"
 				+ "	id NUMBER PRIMARY KEY,\r\n"
 				+ "	name varchar(15) NOT NULL\r\n"
-				+ "); ALTER TABLE Book;";
+				+ ");";
 		String [] partialSql = totalSql.split(";");
 		for(String command:partialSql) {
 			command = command.trim();
-			Handler handler = new Handler(command+";");
+			Handler handler = new Handler(command);
 			handler.interpreter();
 		}
 		try(ObjectInputStream oi =

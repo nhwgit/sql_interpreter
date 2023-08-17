@@ -3,6 +3,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import dataStructure.ForeignKey;
 import dataStructure.Table;
@@ -41,7 +45,24 @@ public class DDL {
 	}
 
 	public void dropCommand(String cmd) {
-
+		String [] item = cmd.trim().split("\\s+");
+		String type = item[1];
+		String FileName = item[2];
+		System.out.println(FileName);
+		Path filePath = Paths.get(FileName+".bin");
+		switch(type) {
+			case "TABLE":
+				try {
+					Files.delete(filePath);
+				} catch(NoSuchFileException e) {
+					System.out.println("삭제하려는 파일이 없습니다.");
+				} catch(IOException e) {
+					e.printStackTrace();
+				}
+			case "INDEX":
+			default:
+				throw new NotSupportedTypeException();
+		}
 	}
 
 	private Table createTableLogic(String cmd) {
@@ -98,7 +119,7 @@ public class DDL {
 								infoForeignKey = new ForeignKey(refTable, refColumn, deleteRule);
 							}
 							break;
-						case ");": break;
+						case ")": break;
 						default: throw new InvalidSyntaxException();
 
 						};
