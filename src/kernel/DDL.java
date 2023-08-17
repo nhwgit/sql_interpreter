@@ -8,8 +8,8 @@ import dataStructure.ForeignKey;
 import dataStructure.Table;
 import dataStructure.Tuple;
 import exception.FileAlreadyExistenceException;
+import exception.InvalidSyntaxException;
 import exception.NotSupportedTypeException;
-import exception.WrongGrammerException;
 
 public class DDL {
 	public void createCommand(String cmd) {
@@ -49,13 +49,15 @@ public class DDL {
 		String [] columns = cmd.split(",");
 		try {
 			for(String column:columns) {
-				String [] item = column.split("\\s");
+				System.out.println(column);
+				String [] item = column.trim().split("\\s+");
 				String field = null;
 				String type = null;
 				int typeSize = 0;
 				boolean allowNull = true;
 				ForeignKey infoForeignKey = null;
 				field = item[0];
+
 				int openParenPosition = item[1].indexOf("(");
 				int closeParenPosition = item[1].indexOf(")");
 				if(openParenPosition == -1 || closeParenPosition == -1) {
@@ -63,12 +65,12 @@ public class DDL {
 					typeSize = 20;
 				}
 				else {
-					type = item[1].substring(openParenPosition);
+					type = item[1].substring(0, openParenPosition);
 					typeSize = Integer.parseInt(item[1].substring(openParenPosition+1, closeParenPosition));
 				}
 				for(int i=2; i<item.length; i++) { // not null, pk, fk등
 					if(i < item.length-1) {
-						String command = item[i] + " " + item[i+1].toUpperCase();
+						String command = item[i] + " " + item[i+1].toUpperCase().trim();
 						switch(command) {
 						case "NOT NULL":
 							allowNull = false; i++;
@@ -96,18 +98,18 @@ public class DDL {
 								infoForeignKey = new ForeignKey(refTable, refColumn, deleteRule);
 							}
 							break;
-						case ");":
-							break;
-						default:
-							throw new WrongGrammerException();
+						case ");": break;
+						default: throw new InvalidSyntaxException();
 
 						};
 					}
-					table.insertTuple(new Tuple(field, type, typeSize, allowNull, infoForeignKey));
 				}
-			} catch(ArrayIndexOutOfBoundsException e) {
-				e.printStackTrace();
+				table.insertTuple(new Tuple(field, type, typeSize, allowNull, infoForeignKey));
 			}
+		}
+		catch(ArrayIndexOutOfBoundsException e) {
+			e.printStackTrace();
+		}
 		return table;
 	}
 

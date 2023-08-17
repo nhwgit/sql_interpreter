@@ -6,6 +6,7 @@ public class Tuple implements java.io.Serializable {
 	private int typeSize = 0;
 	private boolean allowNull = true;
 	private ForeignKey infoForeignKey = null;
+	private static final long serialVersionUID = 1L;
 
 	public Tuple(String field, String type, int typeSize, boolean allowNull, ForeignKey infoForeignKey) {
 		this.field = field;
