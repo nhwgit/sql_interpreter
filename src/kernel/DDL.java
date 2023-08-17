@@ -152,7 +152,7 @@ public class DDL {
 		case "ADD":
 			alterAddLogic(table, cmd);
 			break;
-		case "RENAME":
+		case "RENAME": // rename과 renameto 구분하여 작성 필요
 			break;
 		case "MODIFY":
 			alterModifyLogic(table, cmd);
