@@ -5,12 +5,13 @@ public class Tuple implements java.io.Serializable {
 	private Type type;
 	private boolean allowNull = true;
 	private ForeignKey infoForeignKey = null;
-	private static final long serialVersionUID = 2L;
+	private static final long serialVersionUID = 3L;
 
 	public Tuple(String field, Type type, boolean allowNull, ForeignKey infoForeignKey) {
 		this.field = field;
 		this.type = type;
 		this.allowNull = allowNull;
+		this.infoForeignKey = infoForeignKey;
 	}
 
 	public String getField() {

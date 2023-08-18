@@ -12,6 +12,7 @@ import dataStructure.ForeignKey;
 import dataStructure.Table;
 import dataStructure.Tuple;
 import dataStructure.Type;
+import exception.DisableForeignKeyGenerateException;
 import exception.FileAlreadyExistenceException;
 import exception.InvalidSyntaxException;
 import exception.NotSupportedTypeException;
@@ -97,7 +98,7 @@ public class DDL {
 		case "ADD":
 			alterAddLogic(table, cmd);
 			break;
-		case "RENAME": // rename과 renameto 구분하여 작성 필요
+		case "RENAME":
 			String judge = cmd.substring(index+1, index+3);
 			if(judge.equalsIgnoreCase("TO")) alterRenameToLogic(table, cmd, fileName);
 			else alterRenameLogic(table, cmd);;
@@ -197,20 +198,24 @@ public class DDL {
 						i+=2;
 						if(item[i].equalsIgnoreCase("REFERENCES")); {
 							i++;
-							int openParenPosition2 = item[i].indexOf("(");
-							int closeParenPosition2 = item[i].indexOf(")");
-							String refTable = item[i].substring(openParenPosition2);
-							String refColumn = item[i].substring(openParenPosition2+1, closeParenPosition2);
+							String refTableName = item[i];
+							Table refTable = FileUtil.readObjectFromFile(new Table(), refTableName+".bin");
+							String refColumn = refTable.getPrimaryKey();
+							if(refColumn==null) throw new DisableForeignKeyGenerateException();
 							String deleteRule = "SET NULL";
 							i++;
 							if(i<=item.length && (item[i]+" "+ item[i+1]).equalsIgnoreCase("ON DELETE")) {
 								i+=2;
-								if(item[i].equalsIgnoreCase("CASCADE"))
-									deleteRule = "CASCADE";
-								else if((item[i] + " "+ item[i+1]).equalsIgnoreCase("SET NULL"))
+								if(item[i].equalsIgnoreCase("CASCADE")) {
+									deleteRule = "CASCADE"; i++;
+								}
+								else if((item[i] + " "+ item[i+1]).equalsIgnoreCase("SET NULL")) {
 									deleteRule = "SET NULL";
+									i+=2;
+								}
+								else throw new InvalidSyntaxException();
 							}
-							infoForeignKey = new ForeignKey(refTable, refColumn, deleteRule);
+							infoForeignKey = new ForeignKey(refTableName, refColumn, deleteRule);
 						}
 						break;
 					default:
@@ -224,6 +229,7 @@ public class DDL {
 		}
 		table.insertTuple(new Tuple(field, type, allowNull, infoForeignKey));
 	}
+
 	private void createIndexLogic() {
 
 	}

@@ -1,6 +1,8 @@
 package dataStructure;
 
-public class ForeignKey{
+import exception.InvalidSyntaxException;
+
+public class ForeignKey implements java.io.Serializable{
 	enum DeleteRule {
 		SET_NULL,
 		CASCADE
@@ -15,7 +17,7 @@ public class ForeignKey{
 		this.refColumn = refColumn;
 		if(dRule.equalsIgnoreCase("SET NULL")) this.dRule = DeleteRule.SET_NULL;
 		else if(dRule.equalsIgnoreCase("CASCADE")) this.dRule = DeleteRule.CASCADE;
-		else; // 예외처리
+		else throw new InvalidSyntaxException();
 	}
 
 	public String getRefTable() {

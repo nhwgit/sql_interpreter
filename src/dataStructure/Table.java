@@ -21,6 +21,10 @@ public class Table implements java.io.Serializable {
 		return tuples;
 	}
 
+	public String getPrimaryKey() {
+		return primaryKey;
+	}
+
 	public void printTableInfo() {
 		System.out.println("#################");
 		Iterator<Tuple> itr = tuples.iterator();

@@ -12,17 +12,17 @@ import java.nio.file.Path;
 public class FileUtil {
 
 	public static <T> T readObjectFromFile(T obj, String fileName) {
-	try(ObjectInputStream oi =
-			new ObjectInputStream(new FileInputStream(fileName))) {
-			obj = (T)oi.readObject();
-		}
-		catch(IOException e) {
-			e.printStackTrace();
-		}
-		catch(ClassNotFoundException e) {
-			e.printStackTrace();
-		}
-	return obj;
+		try(ObjectInputStream oi =
+				new ObjectInputStream(new FileInputStream(fileName))) {
+				obj = (T)oi.readObject();
+			}
+			catch(IOException e) {
+				e.printStackTrace();
+			}
+			catch(ClassNotFoundException e) {
+				e.printStackTrace();
+			}
+		return obj;
 	}
 
 	public static <T> void writeObjectToFile(T obj, String fileName) {
