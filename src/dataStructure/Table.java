@@ -7,7 +7,7 @@ import java.util.List;
 public class Table implements java.io.Serializable {
 	private String primaryKey = null;
 	private List<Tuple> tuples = new LinkedList<>();
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 2L;
 
 	public void insertTuple(Tuple tuple) {
 		tuples.add(tuple);
@@ -15,6 +15,10 @@ public class Table implements java.io.Serializable {
 
 	public void setPrimaryKey(String pri) {
 		primaryKey = pri;
+	}
+
+	public List<Tuple> getTuple() {
+		return tuples;
 	}
 
 	public void printTableInfo() {
@@ -25,8 +29,9 @@ public class Table implements java.io.Serializable {
 			if(primaryKey.equals(tuple.getField())) System.out.println("primaryKey: O");
 			else System.out.println("primaryKey: X");
 			System.out.println("field: " + tuple.getField());
-			System.out.println("type: " + tuple.getType());
-			System.out.println("type Size: " + tuple.getTypeSize());
+			Type type = tuple.getType();
+			System.out.println("type: " + type.getTypeName());
+			System.out.println("type Size: " + type.getTypeName());
 			System.out.println("allow null: " + tuple.getAllowNull());
 			ForeignKey fk = tuple.getInfoForeignKey();
 			System.out.println("#####Foreign key#####");

@@ -5,14 +5,19 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Iterator;
+import java.util.List;
 
 import dataStructure.ForeignKey;
 import dataStructure.Table;
 import dataStructure.Tuple;
+import dataStructure.Type;
 import exception.FileAlreadyExistenceException;
 import exception.InvalidSyntaxException;
 import exception.NotSupportedTypeException;
-import util.file;
+import exception.WrongColumnNameException;
+import util.FileUtil;
+import util.KernelUtil;
 
 public class DDL {
 	public void createCommand(String cmd) {
@@ -25,7 +30,7 @@ public class DDL {
 		switch(type) {
 		case "TABLE":
 			Table tableInfo = createTableLogic(cmd.substring(headerSize+1));
-			file.writeObjectToFile(tableInfo, objectName+"bin");
+			FileUtil.writeObjectToFile(tableInfo, objectName+".bin");
 			break;
 		case "INDEX":
 			createIndexLogic();
@@ -36,18 +41,19 @@ public class DDL {
 	}
 
 	public void alterCommand(String cmd) {
-		String [] item = cmd.trim().split("\n | \r\n");
+		String [] item = cmd.trim().split("\n|\r\n");
 		String header = item[0];
 		String action = item[1];
 
 		String [] headerParse = header.trim().split("\\s+");
 
 		String type = headerParse[1];
-		String fileName = headerParse[2];
+		String objectName = headerParse[2];
 
 		switch(type) {
 		case "TABLE":
-			alterTableLogic(action, fileName+".bin");
+			Table tableInfo = alterTableLogic(action, objectName+".bin");
+			FileUtil.writeObjectToFile(tableInfo, objectName+".bin");
 			break;
 		case "INDEX":
 			break;
@@ -78,87 +84,26 @@ public class DDL {
 	private Table createTableLogic(String cmd) {
 		Table table = new Table();
 		String [] columns = cmd.split(",");
-		try {
-			for(String column:columns) {
-				System.out.println(column);
-				String [] item = column.trim().split("\\s+");
-				String field = null;
-				String type = null;
-				int typeSize = 0;
-				boolean allowNull = true;
-				ForeignKey infoForeignKey = null;
-				field = item[0];
-
-				int openParenPosition = item[1].indexOf("(");
-				int closeParenPosition = item[1].indexOf(")");
-				if(openParenPosition == -1 || closeParenPosition == -1) {
-					type = item[1];
-					typeSize = 20;
-				}
-				else {
-					type = item[1].substring(0, openParenPosition);
-					typeSize = Integer.parseInt(item[1].substring(openParenPosition+1, closeParenPosition));
-				}
-				for(int i=2; i<item.length; i++) { // not null, pk, fk등
-					if(i < item.length-1) {
-						String command = item[i] + " " + item[i+1].toUpperCase().trim();
-						switch(command) {
-						case "NOT NULL":
-							allowNull = false; i++;
-							break;
-						case "PRIMARY KEY":
-							table.setPrimaryKey(field); i++;
-							break;
-						case "FOREIGN KEY":
-							i+=2;
-							if(item[i].equalsIgnoreCase("REFERENCES")); {
-								i++;
-								int openParenPosition2 = item[i].indexOf("(");
-								int closeParenPosition2 = item[i].indexOf(")");
-								String refTable = item[i].substring(openParenPosition2);
-								String refColumn = item[i].substring(openParenPosition2+1, closeParenPosition2);
-								String deleteRule = "SET NULL";
-								i++;
-								if(i<=item.length && (item[i]+" "+ item[i+1]).equalsIgnoreCase("ON DELETE")) {
-									i+=2;
-									if(item[i].equalsIgnoreCase("CASCADE"))
-										deleteRule = "CASCADE";
-									else if((item[i] + " "+ item[i+1]).equalsIgnoreCase("SET NULL"))
-										deleteRule = "SET NULL";
-								}
-								infoForeignKey = new ForeignKey(refTable, refColumn, deleteRule);
-							}
-							break;
-						case ")": break;
-						default: throw new InvalidSyntaxException();
-
-						};
-					}
-				}
-				table.insertTuple(new Tuple(field, type, typeSize, allowNull, infoForeignKey));
-			}
-		}
-		catch(ArrayIndexOutOfBoundsException e) {
-			e.printStackTrace();
-		}
+		for(String column:columns)
+				newColumnRegisterLogic(table, column);
 		return table;
 	}
 
 	private Table alterTableLogic(String cmd, String fileName) {
 		int index = cmd.indexOf(" ");
 		String type = cmd.substring(0, index).toUpperCase();
-		Table table = file.readObjectFromFile(new Table(), fileName);
+		Table table = FileUtil.readObjectFromFile(new Table(), fileName);
 		switch(type) {
 		case "ADD":
 			alterAddLogic(table, cmd);
 			break;
 		case "RENAME": // rename과 renameto 구분하여 작성 필요
+			String judge = cmd.substring(index+1, index+3);
+			if(judge.equalsIgnoreCase("TO")) alterRenameToLogic(table, cmd, fileName);
+			else alterRenameLogic(table, cmd);;
 			break;
 		case "MODIFY":
 			alterModifyLogic(table, cmd);
-			break;
-		case "CHANGE":
-			alterChangeLogic(table, cmd);
 			break;
 		case "DROP":
 			alterDropLogic(table, cmd);
@@ -167,30 +112,118 @@ public class DDL {
 		return table;
 	}
 
-	private void alterAddLogic(Table table, String cmd) {
+	private Table alterAddLogic(Table table, String cmd) {
 		String [] cmdParse = cmd.trim().split("\\s+");
+		StringBuilder tmp = new StringBuilder();
+		for(int i=2; i<cmdParse.length; i++)
+			tmp.append(cmdParse[i] + ' ');
+		String registerCmd = (tmp.toString()).trim();
+		newColumnRegisterLogic(table, registerCmd);
+		return table;
 	}
 
 	private void alterRenameLogic(Table table, String cmd) {
 		String [] cmdParse = cmd.trim().split("\\s+");
+		String existName = cmdParse[2];
+		String newName = cmdParse[4];;
+		List<Tuple> tableInfo = table.getTuple();
+		for(Tuple t : tableInfo) {
+			if(t.getField().equals(existName))
+				t.setField(newName);
+		}
 	}
 
 	private void alterModifyLogic(Table table, String cmd) {
 		String [] cmdParse = cmd.trim().split("\\s+");
-	}
-
-	private void alterChangeLogic(Table table, String cmd) {
-		String [] cmdParse = cmd.trim().split("\\s+");
+		String columnName = cmdParse[2];
+		String newType = cmdParse[3];
+		Type type = null;
+		List<Tuple> tableInfo = table.getTuple();
+		for(Tuple t : tableInfo) {
+			if(t.getField().equals(columnName)) {
+				type = KernelUtil.typeGenerator(newType);
+				t.setType(type);
+			}
+		}
+		if(type == null) throw new WrongColumnNameException();
 	}
 
 	private void alterDropLogic(Table table, String cmd) {
 		String [] cmdParse = cmd.trim().split("\\s+");
+		String columnName = cmdParse[2];
+		List<Tuple> tableInfo = table.getTuple();
+		Iterator<Tuple> iterator = tableInfo.iterator();
+		while(iterator.hasNext()) {
+			Tuple element = iterator.next();
+			if(element.getField().equals(columnName))
+				iterator.remove();
+		}
 	}
 
-	private void alterRenameToLogic(Table table, String cmd) {
+	private void alterRenameToLogic(Table table, String cmd, String fileName) {
 		String [] cmdParse = cmd.trim().split("\\s+");
+		String newName = cmdParse[2];
+		try {
+			Path oldFile = Paths.get(fileName);
+			Path newFile = Paths.get(newName+".bin");
+			Files.move(oldFile, newFile);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
+	private void newColumnRegisterLogic(Table table, String cmd) {
+		String [] item = cmd.trim().split("\\s+|\\);");
+		String field = null;
+		Type type = null;
+		int typeSize = 0;
+		boolean allowNull = true;
+		ForeignKey infoForeignKey = null;
+		try {
+			field = item[0];
+			type = KernelUtil.typeGenerator(item[1]);
+
+			for(int i=2; i<item.length; i++) { // not null, pk, fk등
+				if(i < item.length-1) {
+					String command = (item[i] + " " + item[i+1]).toUpperCase().trim();
+					switch(command) {
+					case "NOT NULL":
+						allowNull = false; i++;
+						break;
+					case "PRIMARY KEY":
+						table.setPrimaryKey(field); i++;
+						break;
+					case "FOREIGN KEY":
+						i+=2;
+						if(item[i].equalsIgnoreCase("REFERENCES")); {
+							i++;
+							int openParenPosition2 = item[i].indexOf("(");
+							int closeParenPosition2 = item[i].indexOf(")");
+							String refTable = item[i].substring(openParenPosition2);
+							String refColumn = item[i].substring(openParenPosition2+1, closeParenPosition2);
+							String deleteRule = "SET NULL";
+							i++;
+							if(i<=item.length && (item[i]+" "+ item[i+1]).equalsIgnoreCase("ON DELETE")) {
+								i+=2;
+								if(item[i].equalsIgnoreCase("CASCADE"))
+									deleteRule = "CASCADE";
+								else if((item[i] + " "+ item[i+1]).equalsIgnoreCase("SET NULL"))
+									deleteRule = "SET NULL";
+							}
+							infoForeignKey = new ForeignKey(refTable, refColumn, deleteRule);
+						}
+						break;
+					default:
+						System.out.println(command);
+						throw new InvalidSyntaxException();
+					};
+				}
+			}
+		} catch(ArrayIndexOutOfBoundsException e) {
+			e.printStackTrace();
+		}
+		table.insertTuple(new Tuple(field, type, allowNull, infoForeignKey));
+	}
 	private void createIndexLogic() {
 
 	}

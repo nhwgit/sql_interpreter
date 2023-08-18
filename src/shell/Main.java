@@ -1,17 +1,9 @@
 package shell;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-
-import dataStructure.Table;
-
 public class Main {
 	public static void main(String [] args) {
-		String totalSql = "CREATE TABLE NewBook(\r\n"
-				+ "	id NUMBER PRIMARY KEY,\r\n"
-				+ "	name varchar(15) NOT NULL\r\n"
-				+ ");";
+		String totalSql = "ALTER TABLE NewBook\r\n" +
+						"RENAME TO NewBook2";
 		String [] partialSql = totalSql.split(";");
 		for(String command:partialSql) {
 			command = command.trim();
@@ -20,7 +12,7 @@ public class Main {
 		}
 
 		//테스트용
-		try(ObjectInputStream oi =
+		/*try(ObjectInputStream oi =
 			new ObjectInputStream(new FileInputStream("NewBook.bin"))) {
 			Table table = (Table)oi.readObject();
 			table.printTableInfo();
@@ -30,6 +22,6 @@ public class Main {
 		}
 		catch(ClassNotFoundException e) {
 			e.printStackTrace();
-		}
+		}*/
 	}
 }

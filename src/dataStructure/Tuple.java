@@ -2,16 +2,14 @@ package dataStructure;
 
 public class Tuple implements java.io.Serializable {
 	private String field;
-	private String type;
-	private int typeSize = 0;
+	private Type type;
 	private boolean allowNull = true;
 	private ForeignKey infoForeignKey = null;
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 2L;
 
-	public Tuple(String field, String type, int typeSize, boolean allowNull, ForeignKey infoForeignKey) {
+	public Tuple(String field, Type type, boolean allowNull, ForeignKey infoForeignKey) {
 		this.field = field;
 		this.type = type;
-		this.typeSize = typeSize;
 		this.allowNull = allowNull;
 	}
 
@@ -19,16 +17,20 @@ public class Tuple implements java.io.Serializable {
 		return field;
 	}
 
-	public String getType() {
+	public Type getType() {
 		return type;
-	}
-
-	public int getTypeSize() {
-		return typeSize;
 	}
 
 	public boolean getAllowNull() {
 		return allowNull;
+	}
+
+	public void setField(String field) {
+		this.field = field;
+	}
+
+	public void setType(Type type) {
+		this.type = type;
 	}
 
 	public ForeignKey getInfoForeignKey() {

@@ -9,7 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
-public class file {
+public class FileUtil {
 
 	public static <T> T readObjectFromFile(T obj, String fileName) {
 	try(ObjectInputStream oi =
