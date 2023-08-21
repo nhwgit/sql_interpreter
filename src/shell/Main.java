@@ -13,14 +13,14 @@ public class Main {
 				"name varchar(15) not null\r\n" +
 				");";*/
 
-		String totalSql = "create table NewBook(\r\n" +
+		/*String totalSql = "create table NewBook(\r\n" +
 				"id number primary key,\r\n" +
 				"name varchar(15) not null,\r\n" +
 				"cid number foreign key references City on delete set null\r\n" +
-				");";
+				");";*/
 
-		/*String totalSql = "ALTER TABLE NewBook\r\n" +
-						"RENAME TO NewBook2";*/
+		String totalSql = "ALTER TABLE city\r\n" +
+						"ADD COLUMN test INTEGER PRIMARY KEY";
 		String [] partialSql = totalSql.split(";");
 		for(String command:partialSql) {
 			command = command.trim();
@@ -30,7 +30,7 @@ public class Main {
 
 		//테스트용
 		try(ObjectInputStream oi =
-			new ObjectInputStream(new FileInputStream("NewBook.bin"))) {
+			new ObjectInputStream(new FileInputStream("City.bin"))) {
 			Table table = (Table)oi.readObject();
 			table.printTableInfo();
 		}

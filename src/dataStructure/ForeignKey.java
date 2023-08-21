@@ -1,20 +1,28 @@
 package dataStructure;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 import exception.InvalidSyntaxException;
 
 public class ForeignKey implements java.io.Serializable{
+	private static final long serialVersionUID = 2L;
 	enum DeleteRule {
 		SET_NULL,
 		CASCADE
 	}
 
 	private String refTable = null;
-	private String refColumn = null;
+	private List<String> refColumn = new ArrayList<String>();
 	private DeleteRule dRule = DeleteRule.SET_NULL;
 
-	public ForeignKey(String refTable, String refColumn, String dRule) {
+	public ForeignKey(String refTable, List<String> refColumn, String dRule) {
 		this.refTable = refTable;
-		this.refColumn = refColumn;
+		Iterator<String> itr = refColumn.iterator();
+		while(itr.hasNext())
+			this.refColumn.add(itr.next());
+
 		if(dRule.equalsIgnoreCase("SET NULL")) this.dRule = DeleteRule.SET_NULL;
 		else if(dRule.equalsIgnoreCase("CASCADE")) this.dRule = DeleteRule.CASCADE;
 		else throw new InvalidSyntaxException();
@@ -24,7 +32,7 @@ public class ForeignKey implements java.io.Serializable{
 		return refTable;
 	}
 
-	public String getRefColumn() {
+	public List<String> getRefColumn() {
 		return refColumn;
 	}
 

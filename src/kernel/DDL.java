@@ -8,10 +8,11 @@ import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.List;
 
+import dataStructure.Attribute;
 import dataStructure.ForeignKey;
 import dataStructure.Table;
-import dataStructure.Tuple;
 import dataStructure.Type;
+import exception.DeRefAlreadExistenceException;
 import exception.DisableForeignKeyGenerateException;
 import exception.FileAlreadyExistenceException;
 import exception.InvalidSyntaxException;
@@ -30,7 +31,7 @@ public class DDL {
 		if(table.exists()) throw new FileAlreadyExistenceException();
 		switch(type) {
 		case "TABLE":
-			Table tableInfo = createTableLogic(cmd.substring(headerSize+1));
+			Table tableInfo = createTableLogic(cmd.substring(headerSize+1), objectName);
 			FileUtil.writeObjectToFile(tableInfo, objectName+".bin");
 			break;
 		case "INDEX":
@@ -82,8 +83,9 @@ public class DDL {
 		}
 	}
 
-	private Table createTableLogic(String cmd) {
+	private Table createTableLogic(String cmd, String tableName) {
 		Table table = new Table();
+		table.setTableName(tableName);
 		String [] columns = cmd.split(",");
 		for(String column:columns)
 				newColumnRegisterLogic(table, column);
@@ -96,19 +98,21 @@ public class DDL {
 		Table table = FileUtil.readObjectFromFile(new Table(), fileName);
 		switch(type) {
 		case "ADD":
-			alterAddLogic(table, cmd);
+			alterAddLogic(table, cmd); // 칼럼 추가
 			break;
 		case "RENAME":
 			String judge = cmd.substring(index+1, index+3);
-			if(judge.equalsIgnoreCase("TO")) alterRenameToLogic(table, cmd, fileName);
-			else alterRenameLogic(table, cmd);;
+			if(judge.equalsIgnoreCase("TO")) alterRenameToLogic(table, cmd, fileName); // 테이블명 변경
+			else alterRenameLogic(table, cmd); // 칼럼명 변경
 			break;
 		case "MODIFY":
-			alterModifyLogic(table, cmd);
+			alterModifyLogic(table, cmd); // 데이터타입 변경
 			break;
 		case "DROP":
-			alterDropLogic(table, cmd);
+			alterDropLogic(table, cmd); // 칼럼 삭제
 			break;
+		default:
+			throw new InvalidSyntaxException();
 		}
 		return table;
 	}
@@ -126,11 +130,17 @@ public class DDL {
 	private void alterRenameLogic(Table table, String cmd) {
 		String [] cmdParse = cmd.trim().split("\\s+");
 		String existName = cmdParse[2];
-		String newName = cmdParse[4];;
-		List<Tuple> tableInfo = table.getTuple();
-		for(Tuple t : tableInfo) {
-			if(t.getField().equals(existName))
+		String newName = cmdParse[4];
+		List<Attribute> tableInfo = table.getAttribute();
+		for(Attribute t : tableInfo) {
+			if(t.getField().equals(existName)) {
 				t.setField(newName);
+				List<String> pms = table.getPrimaryKey();
+				for(String pm : pms) {
+					if(pm.equals(existName))
+						pm = newName;
+				}
+			}
 		}
 	}
 
@@ -139,8 +149,8 @@ public class DDL {
 		String columnName = cmdParse[2];
 		String newType = cmdParse[3];
 		Type type = null;
-		List<Tuple> tableInfo = table.getTuple();
-		for(Tuple t : tableInfo) {
+		List<Attribute> tableInfo = table.getAttribute();
+		for(Attribute t : tableInfo) {
 			if(t.getField().equals(columnName)) {
 				type = KernelUtil.typeGenerator(newType);
 				t.setType(type);
@@ -152,12 +162,19 @@ public class DDL {
 	private void alterDropLogic(Table table, String cmd) {
 		String [] cmdParse = cmd.trim().split("\\s+");
 		String columnName = cmdParse[2];
-		List<Tuple> tableInfo = table.getTuple();
-		Iterator<Tuple> iterator = tableInfo.iterator();
-		while(iterator.hasNext()) {
-			Tuple element = iterator.next();
-			if(element.getField().equals(columnName))
-				iterator.remove();
+		List<Attribute> tableInfo = table.getAttribute();
+		Iterator<Attribute> itr = tableInfo.iterator();
+		while(itr.hasNext()) {
+			Attribute element = itr.next();
+			if(element.getField().equals(columnName)) {
+				itr.remove();
+				List<String> primaryKeys = table.getPrimaryKey();
+				Iterator<String> itr2 = primaryKeys.iterator();
+				while(itr2.hasNext()) {
+					if(itr2.next().equals(columnName))
+						table.setNullPrimaryKey();
+				}
+			}
 		}
 	}
 
@@ -168,6 +185,16 @@ public class DDL {
 			Path oldFile = Paths.get(fileName);
 			Path newFile = Paths.get(newName+".bin");
 			Files.move(oldFile, newFile);
+			if(table.getPrimaryKey().size() >= 1) {
+				for(String deRef : table.getDeRefTables()) {
+					Table deRefTable = FileUtil.readObjectFromFile(new Table(), deRef+".bin");
+					for(String deRefPrimary : deRefTable.getPrimaryKey()) {
+						if(deRefPrimary.equals(table.getTableName()));
+						deRefPrimary = newName;
+					}
+				}
+			}
+			table.setTableName(newName);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -192,7 +219,9 @@ public class DDL {
 						allowNull = false; i++;
 						break;
 					case "PRIMARY KEY":
-						table.setPrimaryKey(field); i++;
+						if(table.getPrimaryKey().size()>=1 && table.getDeRefTables().size()>=1)
+							throw new DeRefAlreadExistenceException();
+						table.addPrimaryKey(field); i++;
 						break;
 					case "FOREIGN KEY":
 						i+=2;
@@ -200,7 +229,9 @@ public class DDL {
 							i++;
 							String refTableName = item[i];
 							Table refTable = FileUtil.readObjectFromFile(new Table(), refTableName+".bin");
-							String refColumn = refTable.getPrimaryKey();
+							refTable.addDeRefTables(table.getTableName());
+							FileUtil.writeObjectToFile(refTable, refTableName+".bin");
+							List<String> refColumn = refTable.getPrimaryKey();
 							if(refColumn==null) throw new DisableForeignKeyGenerateException();
 							String deleteRule = "SET NULL";
 							i++;
@@ -227,7 +258,7 @@ public class DDL {
 		} catch(ArrayIndexOutOfBoundsException e) {
 			e.printStackTrace();
 		}
-		table.insertTuple(new Tuple(field, type, allowNull, infoForeignKey));
+		table.insertAttribute(new Attribute(field, type, allowNull, infoForeignKey));
 	}
 
 	private void createIndexLogic() {

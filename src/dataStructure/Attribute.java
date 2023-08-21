@@ -1,13 +1,13 @@
 package dataStructure;
 
-public class Tuple implements java.io.Serializable {
+public class Attribute implements java.io.Serializable {
 	private String field;
 	private Type type;
 	private boolean allowNull = true;
 	private ForeignKey infoForeignKey = null;
 	private static final long serialVersionUID = 3L;
 
-	public Tuple(String field, Type type, boolean allowNull, ForeignKey infoForeignKey) {
+	public Attribute(String field, Type type, boolean allowNull, ForeignKey infoForeignKey) {
 		this.field = field;
 		this.type = type;
 		this.allowNull = allowNull;
