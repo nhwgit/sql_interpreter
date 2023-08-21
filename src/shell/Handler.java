@@ -16,13 +16,13 @@ public class Handler {
 		int index = sql.indexOf(" ");
 		String command = sql.substring(0, index).toUpperCase();
 		switch(command) {
-			case "CREATE": new DDL().createCommand(sql); break;
-			case "ALTER": new DDL().alterCommand(sql); break;
-			case "DROP": new DDL().dropCommand(sql); break;
-			case "INSERT": new DML().insertCommand(sql); break;
-			case "UPDATE": new DML().updateCommand(sql); break;
-			case "DELETE": new DML().deleteCommand(sql); break;
-			case "SELECT": new DCL().dclCommand(sql); break;
+			case "CREATE": DDL.createCommand(sql); break;
+			case "ALTER": DDL.alterCommand(sql); break;
+			case "DROP": DDL.dropCommand(sql); break;
+			case "INSERT": DML.insertCommand(sql); break;
+			case "UPDATE": DML.updateCommand(sql); break;
+			case "DELETE": DML.deleteCommand(sql); break;
+			case "SELECT": DCL.dclCommand(sql); break;
 			default : throw new InvalidSyntaxException();
 		}
 	}

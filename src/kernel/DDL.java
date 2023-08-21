@@ -1,5 +1,7 @@
 package kernel;
+
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -22,17 +24,29 @@ import util.FileUtil;
 import util.KernelUtil;
 
 public class DDL {
-	public void createCommand(String cmd) {
+	public static void createCommand(String cmd) {
 		int headerSize = cmd.indexOf("(");
-		String [] header = cmd.substring(0, headerSize).split(" ");
+		String[] header = cmd.substring(0, headerSize).split(" ");
 		String type = header[1].toUpperCase();
 		String objectName = header[2];
-		File table = new File(objectName+".bin");
-		if(table.exists()) throw new FileAlreadyExistenceException();
-		switch(type) {
+		File table = new File(objectName + ".bin");
+		if (table.exists())
+			throw new FileAlreadyExistenceException();
+		switch (type) {
 		case "TABLE":
-			Table tableInfo = createTableLogic(cmd.substring(headerSize+1), objectName);
-			FileUtil.writeObjectToFile(tableInfo, objectName+".bin");
+			Table tableInfo = createTableLogic(cmd.substring(headerSize + 1), objectName);
+			FileUtil.writeObjectToFile(tableInfo, objectName + ".bin");
+			try(FileWriter fr = new FileWriter(objectName + ".txt")) {
+				List<Attribute> attributes = tableInfo.getAttribute();
+				Iterator<Attribute> itr = attributes.iterator();
+				while(itr.hasNext()) {
+					Attribute attr = itr.next();
+					fr.write(attr.getField()+'\t');
+				}
+				fr.write("\n");
+			} catch(IOException e) {
+				e.printStackTrace();
+			}
 			break;
 		case "INDEX":
 			createIndexLogic();
@@ -42,68 +56,70 @@ public class DDL {
 		}
 	}
 
-	public void alterCommand(String cmd) {
-		String [] item = cmd.trim().split("\n|\r\n");
+	public static void alterCommand(String cmd) {
+		String[] item = cmd.trim().split("\n|\r\n");
 		String header = item[0];
 		String action = item[1];
 
-		String [] headerParse = header.trim().split("\\s+");
+		String[] headerParse = header.trim().split("\\s+");
 
 		String type = headerParse[1];
 		String objectName = headerParse[2];
 
-		switch(type) {
+		switch (type) {
 		case "TABLE":
-			Table tableInfo = alterTableLogic(action, objectName+".bin");
-			FileUtil.writeObjectToFile(tableInfo, objectName+".bin");
+			Table tableInfo = alterTableLogic(action, objectName + ".bin");
+			FileUtil.writeObjectToFile(tableInfo, objectName + ".bin");
 			break;
 		case "INDEX":
 			break;
 		}
 	}
 
-	public void dropCommand(String cmd) {
-		String [] item = cmd.trim().split("\\s+");
+	public static void dropCommand(String cmd) {
+		String[] item = cmd.trim().split("\\s+");
 		String type = item[1];
 		String FileName = item[2];
 		System.out.println(FileName);
-		Path filePath = Paths.get(FileName+".bin");
-		switch(type) {
-			case "TABLE":
-				try {
-					Files.delete(filePath);
-				} catch(NoSuchFileException e) {
-					System.out.println("삭제하려는 파일이 없습니다.");
-				} catch(IOException e) {
-					e.printStackTrace();
-				}
-			case "INDEX":
-			default:
-				throw new NotSupportedTypeException();
+		Path filePath = Paths.get(FileName + ".bin");
+		switch (type) {
+		case "TABLE":
+			try {
+				Files.delete(filePath);
+			} catch (NoSuchFileException e) {
+				System.out.println("삭제하려는 파일이 없습니다.");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		case "INDEX":
+		default:
+			throw new NotSupportedTypeException();
 		}
 	}
 
-	private Table createTableLogic(String cmd, String tableName) {
+	private static Table createTableLogic(String cmd, String tableName) {
 		Table table = new Table();
 		table.setTableName(tableName);
-		String [] columns = cmd.split(",");
-		for(String column:columns)
-				newColumnRegisterLogic(table, column);
+		String[] columns = cmd.split(",");
+		for (String column : columns)
+			newColumnRegisterLogic(table, column);
 		return table;
 	}
 
-	private Table alterTableLogic(String cmd, String fileName) {
+	private static Table alterTableLogic(String cmd, String fileName) {
 		int index = cmd.indexOf(" ");
 		String type = cmd.substring(0, index).toUpperCase();
 		Table table = FileUtil.readObjectFromFile(new Table(), fileName);
-		switch(type) {
+		switch (type) {
 		case "ADD":
 			alterAddLogic(table, cmd); // 칼럼 추가
 			break;
 		case "RENAME":
-			String judge = cmd.substring(index+1, index+3);
-			if(judge.equalsIgnoreCase("TO")) alterRenameToLogic(table, cmd, fileName); // 테이블명 변경
-			else alterRenameLogic(table, cmd); // 칼럼명 변경
+			String judge = cmd.substring(index + 1, index + 3);
+			if (judge.equalsIgnoreCase("TO"))
+				alterRenameToLogic(table, cmd, fileName); // 테이블명 변경
+			else
+				alterRenameLogic(table, cmd); // 칼럼명 변경
 			break;
 		case "MODIFY":
 			alterModifyLogic(table, cmd); // 데이터타입 변경
@@ -117,79 +133,81 @@ public class DDL {
 		return table;
 	}
 
-	private Table alterAddLogic(Table table, String cmd) {
-		String [] cmdParse = cmd.trim().split("\\s+");
+	private static Table alterAddLogic(Table table, String cmd) {
+		String[] cmdParse = cmd.trim().split("\\s+");
 		StringBuilder tmp = new StringBuilder();
-		for(int i=2; i<cmdParse.length; i++)
+		for (int i = 2; i < cmdParse.length; i++)
 			tmp.append(cmdParse[i] + ' ');
 		String registerCmd = (tmp.toString()).trim();
 		newColumnRegisterLogic(table, registerCmd);
 		return table;
 	}
 
-	private void alterRenameLogic(Table table, String cmd) {
-		String [] cmdParse = cmd.trim().split("\\s+");
+	private static void alterRenameLogic(Table table, String cmd) {
+		String[] cmdParse = cmd.trim().split("\\s+");
 		String existName = cmdParse[2];
 		String newName = cmdParse[4];
 		List<Attribute> tableInfo = table.getAttribute();
-		for(Attribute t : tableInfo) {
-			if(t.getField().equals(existName)) {
+		for (Attribute t : tableInfo) {
+			if (t.getField().equals(existName)) {
 				t.setField(newName);
 				List<String> pms = table.getPrimaryKey();
-				for(String pm : pms) {
-					if(pm.equals(existName))
+				for (String pm : pms) {
+					if (pm.equals(existName))
 						pm = newName;
 				}
 			}
 		}
 	}
 
-	private void alterModifyLogic(Table table, String cmd) {
-		String [] cmdParse = cmd.trim().split("\\s+");
+	private static void alterModifyLogic(Table table, String cmd) {
+		String[] cmdParse = cmd.trim().split("\\s+");
 		String columnName = cmdParse[2];
 		String newType = cmdParse[3];
 		Type type = null;
 		List<Attribute> tableInfo = table.getAttribute();
-		for(Attribute t : tableInfo) {
-			if(t.getField().equals(columnName)) {
+		for (Attribute t : tableInfo) {
+			if (t.getField().equals(columnName)) {
 				type = KernelUtil.typeGenerator(newType);
 				t.setType(type);
 			}
 		}
-		if(type == null) throw new WrongColumnNameException();
+		if (type == null)
+			throw new WrongColumnNameException();
 	}
 
-	private void alterDropLogic(Table table, String cmd) {
-		String [] cmdParse = cmd.trim().split("\\s+");
+	private static void alterDropLogic(Table table, String cmd) {
+		String[] cmdParse = cmd.trim().split("\\s+");
 		String columnName = cmdParse[2];
 		List<Attribute> tableInfo = table.getAttribute();
 		Iterator<Attribute> itr = tableInfo.iterator();
-		while(itr.hasNext()) {
+		while (itr.hasNext()) {
 			Attribute element = itr.next();
-			if(element.getField().equals(columnName)) {
+			if (element.getField().equals(columnName)) {
 				itr.remove();
 				List<String> primaryKeys = table.getPrimaryKey();
 				Iterator<String> itr2 = primaryKeys.iterator();
-				while(itr2.hasNext()) {
-					if(itr2.next().equals(columnName))
+				while (itr2.hasNext()) {
+					if (itr2.next().equals(columnName))
 						table.setNullPrimaryKey();
 				}
 			}
 		}
 	}
 
-	private void alterRenameToLogic(Table table, String cmd, String fileName) {
-		String [] cmdParse = cmd.trim().split("\\s+");
+	private static void alterRenameToLogic(Table table, String cmd, String fileName) {
+		String[] cmdParse = cmd.trim().split("\\s+");
 		String newName = cmdParse[2];
 		try {
 			Path oldFile = Paths.get(fileName);
-			Path newFile = Paths.get(newName+".bin");
+			Path newFile = Paths.get(newName + ".bin");
 			Files.move(oldFile, newFile);
-			if(table.getPrimaryKey().size() >= 1) {
-				for(String deRef : table.getDeRefTables()) {
-					Table deRefTable = FileUtil.readObjectFromFile(new Table(), deRef+".bin");
-					for(String deRefPrimary : deRefTable.getPrimaryKey()) {
-						if(deRefPrimary.equals(table.getTableName()));
+			if (table.getPrimaryKey().size() >= 1) {
+				for (String deRef : table.getDeRefTables()) {
+					Table deRefTable = FileUtil.readObjectFromFile(new Table(), deRef + ".bin");
+					for (String deRefPrimary : deRefTable.getPrimaryKey()) {
+						if (deRefPrimary.equals(table.getTableName()))
+							;
 						deRefPrimary = newName;
 					}
 				}
@@ -200,8 +218,8 @@ public class DDL {
 		}
 	}
 
-	private void newColumnRegisterLogic(Table table, String cmd) {
-		String [] item = cmd.trim().split("\\s+|\\);");
+	private static void newColumnRegisterLogic(Table table, String cmd) {
+		String[] item = cmd.trim().split("\\s+|\\);");
 		String field = null;
 		Type type = null;
 		int typeSize = 0;
@@ -211,57 +229,62 @@ public class DDL {
 			field = item[0];
 			type = KernelUtil.typeGenerator(item[1]);
 
-			for(int i=2; i<item.length; i++) { // not null, pk, fk등
-				if(i < item.length-1) {
-					String command = (item[i] + " " + item[i+1]).toUpperCase().trim();
-					switch(command) {
+			for (int i = 2; i < item.length; i++) { // not null, pk, fk등
+				if (i < item.length - 1) {
+					String command = (item[i] + " " + item[i + 1]).toUpperCase().trim();
+					switch (command) {
 					case "NOT NULL":
-						allowNull = false; i++;
+						allowNull = false;
+						i++;
 						break;
 					case "PRIMARY KEY":
-						if(table.getPrimaryKey().size()>=1 && table.getDeRefTables().size()>=1)
+						if (table.getPrimaryKey().size() >= 1 && table.getDeRefTables().size() >= 1)
 							throw new DeRefAlreadExistenceException();
-						table.addPrimaryKey(field); i++;
+						table.addPrimaryKey(field);
+						i++;
 						break;
 					case "FOREIGN KEY":
-						i+=2;
-						if(item[i].equalsIgnoreCase("REFERENCES")); {
-							i++;
-							String refTableName = item[i];
-							Table refTable = FileUtil.readObjectFromFile(new Table(), refTableName+".bin");
-							refTable.addDeRefTables(table.getTableName());
-							FileUtil.writeObjectToFile(refTable, refTableName+".bin");
-							List<String> refColumn = refTable.getPrimaryKey();
-							if(refColumn==null) throw new DisableForeignKeyGenerateException();
-							String deleteRule = "SET NULL";
-							i++;
-							if(i<=item.length && (item[i]+" "+ item[i+1]).equalsIgnoreCase("ON DELETE")) {
-								i+=2;
-								if(item[i].equalsIgnoreCase("CASCADE")) {
-									deleteRule = "CASCADE"; i++;
-								}
-								else if((item[i] + " "+ item[i+1]).equalsIgnoreCase("SET NULL")) {
-									deleteRule = "SET NULL";
-									i+=2;
-								}
-								else throw new InvalidSyntaxException();
-							}
-							infoForeignKey = new ForeignKey(refTableName, refColumn, deleteRule);
+						i += 2;
+						if (item[i].equalsIgnoreCase("REFERENCES"))
+							; {
+						i++;
+						String refTableName = item[i];
+						Table refTable = FileUtil.readObjectFromFile(new Table(), refTableName + ".bin");
+						refTable.addDeRefTables(table.getTableName());
+						FileUtil.writeObjectToFile(refTable, refTableName + ".bin");
+						List<String> refColumn = refTable.getPrimaryKey();
+						if (refColumn == null)
+							throw new DisableForeignKeyGenerateException();
+						String deleteRule = "SET NULL";
+						i++;
+						if (i <= item.length && (item[i] + " " + item[i + 1]).equalsIgnoreCase("ON DELETE")) {
+							i += 2;
+							if (item[i].equalsIgnoreCase("CASCADE")) {
+								deleteRule = "CASCADE";
+								i++;
+							} else if ((item[i] + " " + item[i + 1]).equalsIgnoreCase("SET NULL")) {
+								deleteRule = "SET NULL";
+								i += 2;
+							} else
+								throw new InvalidSyntaxException();
 						}
+						infoForeignKey = new ForeignKey(refTableName, refColumn, deleteRule);
+					}
 						break;
 					default:
 						System.out.println(command);
 						throw new InvalidSyntaxException();
-					};
+					}
+					;
 				}
 			}
-		} catch(ArrayIndexOutOfBoundsException e) {
+		} catch (ArrayIndexOutOfBoundsException e) {
 			e.printStackTrace();
 		}
 		table.insertAttribute(new Attribute(field, type, allowNull, infoForeignKey));
 	}
 
-	private void createIndexLogic() {
+	private static void createIndexLogic() {
 
 	}
 }

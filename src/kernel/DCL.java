@@ -1,7 +1,7 @@
 package kernel;
 
 public class DCL {
-	public void dclCommand(String cmd) {
+	public static void dclCommand(String cmd) {
 
 	}
 
