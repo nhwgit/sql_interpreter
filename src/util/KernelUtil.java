@@ -1,5 +1,7 @@
 package util;
 
+import java.util.List;
+
 import dataStructure.Type;
 
 public class KernelUtil {
@@ -17,5 +19,12 @@ public class KernelUtil {
 			typeSize = Integer.parseInt(cmd.substring(openParenPosition+1, closeParenPosition));
 		}
 		return new Type(typeName, typeSize);
+	}
+
+	public static boolean isPrimaryKey(List<String> infoPrimaryKey, String attrName) {
+		for(String s: infoPrimaryKey) {
+			if(s.equalsIgnoreCase(attrName)) return true;
+		}
+		return false;
 	}
 }

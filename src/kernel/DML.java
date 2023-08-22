@@ -1,6 +1,8 @@
 package kernel;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -13,8 +15,11 @@ import dataStructure.Table;
 import dataStructure.Type;
 import exception.ExceedingItemException;
 import exception.InvalidSyntaxException;
+import exception.InvalidTypeException;
 import exception.NotAllowNullException;
+import exception.UniqueKeyViolatonException;
 import util.FileUtil;
+import util.KernelUtil;
 
 public class DML {
 	public static void insertCommand(String cmd) {
@@ -23,6 +28,7 @@ public class DML {
 		String tableName = header[2];
 
 		Table table = FileUtil.readObjectFromFile(new Table(), tableName+".bin");
+		List<String> pKey = table.getPrimaryKey();
 		List<Type> attributeType = new ArrayList();
 		List<Attribute> attributes = table.getAttribute();
 
@@ -46,8 +52,14 @@ public class DML {
 					Attribute attribute = attributes.get(j);
 					Type type = attributeType.get(j);
 					if(data != null) {
-						boolean check = insertTypeCheck(type, data);
-						if(check == false) throw new InvalidSyntaxException();
+						if(KernelUtil.isPrimaryKey(pKey, attributes.get(j).getField())) {
+							if(insertUniqueKeyCheck(data, j, tableName) ==false)
+								throw new UniqueKeyViolatonException();
+						}
+						else {
+							if(insertTypeCheck(type, data) == false)
+								throw new InvalidTypeException();
+						}
 						br.write(data + "\t");
 					}
 					else {
@@ -57,8 +69,8 @@ public class DML {
 						br.write(nullValue + "\t");
 						}
 					}
+					br.newLine();
 				}
-				br.newLine();
 			} catch(IOException e) {
 			e.printStackTrace();
 		}
@@ -83,11 +95,23 @@ public class DML {
 				return false;
 			}
 		}
-		if(data.length() < type.getTypeSize()) return false;
+		if(data.length() > type.getTypeSize()) return false;
 		else return true;
 	}
 
-	public static boolean insertUniqueKeyCheck() {
+	public static boolean insertUniqueKeyCheck(String data, int idx, String tableName) {
+		try(BufferedReader br = new BufferedReader(new FileReader(tableName+".txt"))) {
+			br.readLine(); // 헤더 읽기
+			String tuple;
+			while(true) {
+				tuple = br.readLine();
+				if(tuple==null) break;
+				String [] TupleParse= tuple.trim().split("\\s+");
+				if(TupleParse[idx].equalsIgnoreCase(data)) return false;
+			}
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
 		return true;
 	}
 

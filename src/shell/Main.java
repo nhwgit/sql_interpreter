@@ -13,11 +13,13 @@ public class Main {
 				"cid number foreign key references City on delete set null\r\n" +
 				");";*/
 
-		/*String totalSql = "ALTER TABLE city\r\n" +
+		/*String totalSql = "ALTER TABLE City\r\n" +
 						"ADD COLUMN test INTEGER PRIMARY KEY";*/
 
 		String totalSql = "INSERT INTO City\r\n" +
-				"VALUES (1, '도시1');";
+				"VALUES (1, '도시1')\r\n" +
+				"VALUES (2, '도시2')\r\n+" +
+				"VALUES (3, '도시3');";
 
 		String [] partialSql = totalSql.split(";");
 		for(String command:partialSql) {
