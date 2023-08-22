@@ -5,7 +5,7 @@ public class Type implements java.io.Serializable {
 	private int typeSize;
 
 	public Type(String typeName, int typeSize) {
-		this.typeName = typeName;
+		this.typeName = typeName.toUpperCase();
 		this.typeSize = typeSize;
 	}
 

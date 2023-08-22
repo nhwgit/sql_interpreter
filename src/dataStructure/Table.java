@@ -84,7 +84,7 @@ public class Table implements java.io.Serializable {
 			if(fk != null) {
 				System.out.println("refTable: "+fk.getRefTable());
 				System.out.println("refColumn: "+fk.getRefColumn());
-				System.out.println("refDRule: "+fk.getdRule());
+				System.out.println("refDRule: "+fk.getDeleteRule());
 			}
 			else {
 				System.out.println("foreign key: None");

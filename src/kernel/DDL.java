@@ -36,15 +36,15 @@ public class DDL {
 		case "TABLE":
 			Table tableInfo = createTableLogic(cmd.substring(headerSize + 1), objectName);
 			FileUtil.writeObjectToFile(tableInfo, objectName + ".bin");
-			try(FileWriter fr = new FileWriter(objectName + ".txt")) {
+			try (FileWriter fr = new FileWriter(objectName + ".txt")) {
 				List<Attribute> attributes = tableInfo.getAttribute();
 				Iterator<Attribute> itr = attributes.iterator();
-				while(itr.hasNext()) {
+				while (itr.hasNext()) {
 					Attribute attr = itr.next();
-					fr.write(attr.getField()+'\t');
+					fr.write(attr.getField() + '\t');
 				}
 				fr.write("\n");
-			} catch(IOException e) {
+			} catch (IOException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -245,37 +245,46 @@ public class DDL {
 						break;
 					case "FOREIGN KEY":
 						i += 2;
-						if (item[i].equalsIgnoreCase("REFERENCES"))
-							; {
-						i++;
-						String refTableName = item[i];
-						Table refTable = FileUtil.readObjectFromFile(new Table(), refTableName + ".bin");
-						refTable.addDeRefTables(table.getTableName());
-						FileUtil.writeObjectToFile(refTable, refTableName + ".bin");
-						List<String> refColumn = refTable.getPrimaryKey();
-						if (refColumn == null)
-							throw new DisableForeignKeyGenerateException();
-						String deleteRule = "SET NULL";
-						i++;
-						if (i <= item.length && (item[i] + " " + item[i + 1]).equalsIgnoreCase("ON DELETE")) {
-							i += 2;
-							if (item[i].equalsIgnoreCase("CASCADE")) {
-								deleteRule = "CASCADE";
-								i++;
-							} else if ((item[i] + " " + item[i + 1]).equalsIgnoreCase("SET NULL")) {
-								deleteRule = "SET NULL";
+						if (item[i].equalsIgnoreCase("REFERENCES")) {
+							i++;
+							String refTableName = item[i];
+							Table refTable = FileUtil.readObjectFromFile(new Table(), refTableName + ".bin");
+							FileUtil.writeObjectToFile(refTable, refTableName + ".bin");
+							List<String> refColumn = refTable.getPrimaryKey();
+							if (refColumn == null)
+								throw new DisableForeignKeyGenerateException();
+							String deleteRule = "RESTRICT";
+							String updateRule = "RESTRICT";
+							i++;
+							//아래 코드 중복 처리 예정
+							if (i <= item.length && (item[i] + " " + item[i + 1]).equalsIgnoreCase("ON DELETE")) {
 								i += 2;
-							} else
-								throw new InvalidSyntaxException();
+								if (item[i].equalsIgnoreCase("CASCADE")) {
+									deleteRule = "CASCADE";
+									i++;
+								} else if ((item[i] + " " + item[i + 1]).equalsIgnoreCase("SET NULL")) {
+									deleteRule = "SET NULL";
+									i += 2;
+								} else
+									throw new InvalidSyntaxException();
+							}
+							else if (i <= item.length && (item[i] + " " + item[i + 1]).equalsIgnoreCase("ON UPDATE")) {
+								i += 2;
+								if (item[i].equalsIgnoreCase("CASCADE")) {
+									updateRule = "CASCADE";
+									i++;
+								} else if ((item[i] + " " + item[i + 1]).equalsIgnoreCase("SET NULL")) {
+									updateRule = "SET NULL";
+									i += 2;
+								} else
+									throw new InvalidSyntaxException();
+							}
 						}
-						infoForeignKey = new ForeignKey(refTableName, refColumn, deleteRule);
-					}
 						break;
 					default:
 						System.out.println(command);
 						throw new InvalidSyntaxException();
 					}
-					;
 				}
 			}
 		} catch (ArrayIndexOutOfBoundsException e) {

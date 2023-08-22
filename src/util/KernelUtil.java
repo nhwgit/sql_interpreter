@@ -27,4 +27,12 @@ public class KernelUtil {
 		}
 		return false;
 	}
+
+	public static int getFieldIdx(String header, String findData) {
+		String [] headerParse = header.trim().split("\\s+");
+		for(int i=0; i<headerParse.length; i++) {
+			if(headerParse[i].equalsIgnoreCase(findData)) return i;
+		}
+		return -1;
+	}
 }

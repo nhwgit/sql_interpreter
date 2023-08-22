@@ -7,24 +7,33 @@ import java.util.List;
 import exception.InvalidSyntaxException;
 
 public class ForeignKey implements java.io.Serializable{
-	private static final long serialVersionUID = 2L;
-	enum DeleteRule {
+	private static final long serialVersionUID = 3L;
+	enum Rule {
 		SET_NULL,
-		CASCADE
+		CASCADE,
+		RESTRICT
 	}
 
 	private String refTable = null;
 	private List<String> refColumn = new ArrayList<String>();
-	private DeleteRule dRule = DeleteRule.SET_NULL;
+	private Rule deleteRule = Rule.RESTRICT;
+	private Rule updateRule = Rule.RESTRICT;
 
-	public ForeignKey(String refTable, List<String> refColumn, String dRule) {
+	public ForeignKey(String refTable, List<String> refColumn, String deleteRule, String updateRule) {
 		this.refTable = refTable;
 		Iterator<String> itr = refColumn.iterator();
 		while(itr.hasNext())
 			this.refColumn.add(itr.next());
 
-		if(dRule.equalsIgnoreCase("SET NULL")) this.dRule = DeleteRule.SET_NULL;
-		else if(dRule.equalsIgnoreCase("CASCADE")) this.dRule = DeleteRule.CASCADE;
+		this.deleteRule = parseRule(deleteRule);
+		this.updateRule = parseRule(updateRule);
+
+	}
+
+	private Rule parseRule(String rule) {
+		if(rule.equalsIgnoreCase("SET NULL")) return Rule.SET_NULL;
+		else if(rule.equalsIgnoreCase("CASCADE")) return Rule.CASCADE;
+		else if(rule.equalsIgnoreCase("RESTRICT")) return Rule.RESTRICT;
 		else throw new InvalidSyntaxException();
 	}
 
@@ -36,9 +45,17 @@ public class ForeignKey implements java.io.Serializable{
 		return refColumn;
 	}
 
-	public String getdRule() {
-		if(dRule == DeleteRule.SET_NULL) return "SET NULL";
-		else if(dRule == DeleteRule.CASCADE) return "CASCADE";
+	public String getDeleteRule() {
+		if(deleteRule == Rule.SET_NULL) return "SET NULL";
+		else if(deleteRule == Rule.CASCADE) return "CASCADE";
+		else if(deleteRule == Rule.RESTRICT) return "RESTRICT";
+		return null;
+	}
+
+	public String getUpdateRule() {
+		if(updateRule == Rule.SET_NULL) return "SET NULL";
+		else if(updateRule == Rule.CASCADE) return "CASCADE";
+		else if(updateRule == Rule.RESTRICT) return "RESTRICT";
 		return null;
 	}
 }
