@@ -2,6 +2,7 @@ package util;
 
 import java.util.List;
 
+import dataStructure.Attribute;
 import dataStructure.Type;
 
 public class KernelUtil {
@@ -32,6 +33,14 @@ public class KernelUtil {
 		String [] headerParse = header.trim().split("\\s+");
 		for(int i=0; i<headerParse.length; i++) {
 			if(headerParse[i].equalsIgnoreCase(findData)) return i;
+		}
+		return -1;
+	}
+
+	public static int findAttributeIndex(List<Attribute> attributes, String findField) {
+		for(int i=0; i<attributes.size(); i++) {
+			if(attributes.get(i).getField().equals(findField))
+				return i;
 		}
 		return -1;
 	}

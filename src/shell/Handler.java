@@ -2,8 +2,8 @@ package shell;
 
 import exception.InvalidSyntaxException;
 import kernel.DCL;
-import kernel.DDL;
-import kernel.DML;
+import kernel.ddl.DDL;
+import kernel.dml.DataSetting;
 
 public class Handler {
 	String sql;
@@ -19,9 +19,9 @@ public class Handler {
 			case "CREATE": DDL.createCommand(sql); break;
 			case "ALTER": DDL.alterCommand(sql); break;
 			case "DROP": DDL.dropCommand(sql); break;
-			case "INSERT": DML.insertCommand(sql); break;
-			case "UPDATE": DML.updateCommand(sql); break;
-			case "DELETE": DML.deleteCommand(sql); break;
+			case "INSERT": DataSetting.insertCommand(sql); break;
+			case "UPDATE": DataSetting.updateCommand(sql); break;
+			case "DELETE": DataSetting.deleteCommand(sql); break;
 			case "SELECT": DCL.dclCommand(sql); break;
 			default : throw new InvalidSyntaxException();
 		}

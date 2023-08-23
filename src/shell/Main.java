@@ -7,19 +7,23 @@ public class Main {
 				"name varchar(15) not null\r\n" +
 				");";*/
 
-		String totalSql = "create table NewBook(\r\n" +
+		/*String totalSql = "create table NewBook(\r\n" +
 				"id number primary key,\r\n" +
 				"name varchar(15) not null,\r\n" +
 				"cid number foreign key references City on delete set null\r\n" +
-				");";
+				");";*/
 
 		/*String totalSql = "ALTER TABLE City\r\n" +
 						"ADD COLUMN test INTEGER PRIMARY KEY";*/
 
 		/*String totalSql = "INSERT INTO City\r\n" +
-				"VALUES (1, '도시1')\r\n" +
-				"VALUES (2, '도시2')\r\n+" +
-				"VALUES (3, '도시3');";*/
+				"VALUES (4, '서울')\r\n" +
+				"VALUES (5, '부산')\r\n+" +
+				"VALUES (6, '인천');";*/
+
+		String totalSql = "UPDATE City\r\n"+
+						"SET name = '부산'\r\n"+
+						"WHERE name = '서울'";
 
 		String [] partialSql = totalSql.split(";");
 		for(String command:partialSql) {
