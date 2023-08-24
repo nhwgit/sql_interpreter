@@ -1,4 +1,4 @@
-package dataStructure;
+package dataStructure.table;
 
 public class Type implements java.io.Serializable {
 	private String typeName;

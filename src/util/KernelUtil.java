@@ -2,8 +2,8 @@ package util;
 
 import java.util.List;
 
-import dataStructure.Attribute;
-import dataStructure.Type;
+import dataStructure.table.Attribute;
+import dataStructure.table.Type;
 
 public class KernelUtil {
 	public static Type typeGenerator(String cmd) {

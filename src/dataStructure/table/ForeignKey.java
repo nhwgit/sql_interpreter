@@ -1,4 +1,4 @@
-package dataStructure;
+package dataStructure.table;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -15,7 +15,7 @@ public class ForeignKey implements java.io.Serializable{
 	}
 
 	private String refTable = null;
-	private List<String> refColumn = new ArrayList<String>();
+	private List<String> refColumn = new ArrayList<String>(); // 참조 테이블의 기본키가 여러개일 수도 있으므로
 	private Rule deleteRule = Rule.RESTRICT;
 	private Rule updateRule = Rule.RESTRICT;
 

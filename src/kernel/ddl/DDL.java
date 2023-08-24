@@ -10,11 +10,11 @@ import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.List;
 
-import dataStructure.Attribute;
-import dataStructure.ForeignKey;
-import dataStructure.Table;
-import dataStructure.Type;
-import exception.DeRefAlreadExistenceException;
+import dataStructure.table.Attribute;
+import dataStructure.table.ForeignKey;
+import dataStructure.table.Table;
+import dataStructure.table.Type;
+import exception.DeRefAlreadyExistenceException;
 import exception.DisableForeignKeyGenerateException;
 import exception.FileAlreadyExistenceException;
 import exception.InvalidSyntaxException;
@@ -239,7 +239,7 @@ public class DDL {
 						break;
 					case "PRIMARY KEY":
 						if (table.getPrimaryKey().size() >= 1 && table.getDeRefTables().size() >= 1)
-							throw new DeRefAlreadExistenceException();
+							throw new DeRefAlreadyExistenceException();
 						table.addPrimaryKey(field);
 						i++;
 						break;
@@ -249,14 +249,13 @@ public class DDL {
 							i++;
 							String refTableName = item[i];
 							Table refTable = FileUtil.readObjectFromFile(new Table(), refTableName + ".bin");
-							FileUtil.writeObjectToFile(refTable, refTableName + ".bin");
 							List<String> refColumn = refTable.getPrimaryKey();
 							if (refColumn == null)
 								throw new DisableForeignKeyGenerateException();
 							String deleteRule = "RESTRICT";
 							String updateRule = "RESTRICT";
 							i++;
-							//아래 코드 중복 처리 예정
+							//아래 코드 중복된거 간결화 예정
 							if (i <= item.length && (item[i] + " " + item[i + 1]).equalsIgnoreCase("ON DELETE")) {
 								i += 2;
 								if (item[i].equalsIgnoreCase("CASCADE")) {
@@ -279,10 +278,13 @@ public class DDL {
 								} else
 									throw new InvalidSyntaxException();
 							}
+							refTable.addDeRefTables(table.getTableName());
+							FileUtil.writeObjectToFile(refTable, refTableName + ".bin");
+
+							infoForeignKey = new ForeignKey(refTableName, refColumn, deleteRule, updateRule);
 						}
 						break;
 					default:
-						System.out.println(command);
 						throw new InvalidSyntaxException();
 					}
 				}
@@ -291,6 +293,7 @@ public class DDL {
 			e.printStackTrace();
 		}
 		table.insertAttribute(new Attribute(field, type, allowNull, infoForeignKey));
+
 	}
 
 	private static void createIndexLogic() {

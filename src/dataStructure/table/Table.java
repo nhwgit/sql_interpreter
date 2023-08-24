@@ -1,4 +1,4 @@
-package dataStructure;
+package dataStructure.table;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -84,7 +84,8 @@ public class Table implements java.io.Serializable {
 			if(fk != null) {
 				System.out.println("refTable: "+fk.getRefTable());
 				System.out.println("refColumn: "+fk.getRefColumn());
-				System.out.println("refDRule: "+fk.getDeleteRule());
+				System.out.println("refUpdateRule: "+fk.getUpdateRule());
+				System.out.println("refDeleteRule: "+fk.getDeleteRule());
 			}
 			else {
 				System.out.println("foreign key: None");
