@@ -4,14 +4,15 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import dataStructure.Pair;
 import exception.DuplicatedNameException;
 
 public class Table implements java.io.Serializable {
 	private String tableName;
 	private List<String> primaryKey = new LinkedList<>();
 	private List<Attribute> attributes = new LinkedList<>();
-	private List<String> deRefTables = new LinkedList<>();
-	private static final long serialVersionUID = 3L;
+	private List<Pair<String, String>> deRefInfos = new LinkedList<>(); // (테이블명, 칼럼명)
+	private static final long serialVersionUID = 4L;
 
 	public void setTableName(String tableName) {
 		this.tableName = tableName;
@@ -45,17 +46,18 @@ public class Table implements java.io.Serializable {
 		primaryKey.add(pri);
 	}
 
-	public void addDeRefTables(String deRefTable) {
-		Iterator<String> itr = deRefTables.iterator();
+	public void addDeRefInfos(Pair<String, String> deRefTable) {
+		Iterator<Pair<String, String>> itr = deRefInfos.iterator();
 		while(itr.hasNext()) {
-			String name = itr.next();
-			if(name.equals(deRefTable)) throw new DuplicatedNameException();
+			Pair<String, String> pair = itr.next();
+			pair.first = tableName;
+			if(tableName.equals(deRefTable)) throw new DuplicatedNameException();
 		}
-		deRefTables.add(deRefTable);
+		deRefInfos.add(deRefTable);
 	}
 
-	public List<String> getDeRefTables() {
-		return deRefTables;
+	public List<Pair<String, String>> getDeRefInfos() {
+		return deRefInfos;
 	}
 
 	public List<Attribute> getAttribute() {
@@ -90,12 +92,11 @@ public class Table implements java.io.Serializable {
 			else {
 				System.out.println("foreign key: None");
 			}
-			Iterator<String> itr3 = deRefTables.iterator();
-			System.out.println("#################\n");
+			System.out.println("");
 		}
-		Iterator<String> itr3 = deRefTables.iterator();
+		Iterator<Pair<String, String>> itr3 = deRefInfos.iterator();
 		System.out.println("#####Dereference Table#####");
 		while(itr3.hasNext())
-			System.out.println("-"+itr3.next());
+			System.out.println("-"+itr3.next().first);
 	}
 }

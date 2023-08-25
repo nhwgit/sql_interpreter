@@ -1,6 +1,8 @@
 package kernel.ddl;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -10,6 +12,7 @@ import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.List;
 
+import dataStructure.Pair;
 import dataStructure.table.Attribute;
 import dataStructure.table.ForeignKey;
 import dataStructure.table.Table;
@@ -18,6 +21,7 @@ import exception.DeRefAlreadyExistenceException;
 import exception.DisableForeignKeyGenerateException;
 import exception.FileAlreadyExistenceException;
 import exception.InvalidSyntaxException;
+import exception.NotAllowAlterModifyException;
 import exception.NotSupportedTypeException;
 import exception.WrongColumnNameException;
 import util.FileUtil;
@@ -165,6 +169,15 @@ public class DDL {
 		String columnName = cmdParse[2];
 		String newType = cmdParse[3];
 		Type type = null;
+
+		//테이블에 이미 데이터가 있을 경우 타입 변경 불허
+		try (BufferedReader br = new BufferedReader(new FileReader(table.getTableName() + ".txt"))) {
+			br.readLine();
+			if(br.readLine() != null) throw new NotAllowAlterModifyException();
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
+
 		List<Attribute> tableInfo = table.getAttribute();
 		for (Attribute t : tableInfo) {
 			if (t.getField().equals(columnName)) {
@@ -203,8 +216,9 @@ public class DDL {
 			Path newFile = Paths.get(newName + ".bin");
 			Files.move(oldFile, newFile);
 			if (table.getPrimaryKey().size() >= 1) {
-				for (String deRef : table.getDeRefTables()) {
-					Table deRefTable = FileUtil.readObjectFromFile(new Table(), deRef + ".bin");
+				for (Pair<String, String> deRef : table.getDeRefInfos()) {
+					String deRefTableName = deRef.first;
+					Table deRefTable = FileUtil.readObjectFromFile(new Table(), deRefTableName + ".bin");
 					for (String deRefPrimary : deRefTable.getPrimaryKey()) {
 						if (deRefPrimary.equals(table.getTableName()))
 							;
@@ -238,7 +252,7 @@ public class DDL {
 						i++;
 						break;
 					case "PRIMARY KEY":
-						if (table.getPrimaryKey().size() >= 1 && table.getDeRefTables().size() >= 1)
+						if (table.getPrimaryKey().size() >= 1 && table.getDeRefInfos().size() >= 1)
 							throw new DeRefAlreadyExistenceException();
 						table.addPrimaryKey(field);
 						i++;
@@ -255,30 +269,35 @@ public class DDL {
 							String deleteRule = "RESTRICT";
 							String updateRule = "RESTRICT";
 							i++;
-							//아래 코드 중복된거 간결화 예정
-							if (i <= item.length && (item[i] + " " + item[i + 1]).equalsIgnoreCase("ON DELETE")) {
-								i += 2;
-								if (item[i].equalsIgnoreCase("CASCADE")) {
-									deleteRule = "CASCADE";
-									i++;
-								} else if ((item[i] + " " + item[i + 1]).equalsIgnoreCase("SET NULL")) {
-									deleteRule = "SET NULL";
+							// 아래 코드 중복된거 간결화 예정
+							while (i < item.length-1) {
+								if ((item[i] + " " + item[i + 1]).equalsIgnoreCase("ON DELETE")) {
 									i += 2;
-								} else
-									throw new InvalidSyntaxException();
-							}
-							else if (i <= item.length && (item[i] + " " + item[i + 1]).equalsIgnoreCase("ON UPDATE")) {
-								i += 2;
-								if (item[i].equalsIgnoreCase("CASCADE")) {
-									updateRule = "CASCADE";
-									i++;
-								} else if ((item[i] + " " + item[i + 1]).equalsIgnoreCase("SET NULL")) {
-									updateRule = "SET NULL";
+									if (item[i].equalsIgnoreCase("CASCADE")) {
+										deleteRule = "CASCADE";
+										i++;
+									} else if ((item[i] + " " + item[i + 1]).equalsIgnoreCase("SET NULL")) {
+										deleteRule = "SET NULL";
+										i += 2;
+									} else
+										throw new InvalidSyntaxException();
+								} else if (i <= item.length
+										&& (item[i] + " " + item[i + 1]).equalsIgnoreCase("ON UPDATE")) {
 									i += 2;
+									if (item[i].equalsIgnoreCase("CASCADE")) {
+										updateRule = "CASCADE";
+										i++;
+									} else if ((item[i] + " " + item[i + 1]).equalsIgnoreCase("SET NULL")) {
+										updateRule = "SET NULL";
+										i += 2;
+									} else
+										throw new InvalidSyntaxException();
 								} else
-									throw new InvalidSyntaxException();
+									break;
 							}
-							refTable.addDeRefTables(table.getTableName());
+							Pair<String, String> deRefTableContent = new Pair<String, String>(table.getTableName(),
+									field);
+							refTable.addDeRefInfos(deRefTableContent);
 							FileUtil.writeObjectToFile(refTable, refTableName + ".bin");
 
 							infoForeignKey = new ForeignKey(refTableName, refColumn, deleteRule, updateRule);

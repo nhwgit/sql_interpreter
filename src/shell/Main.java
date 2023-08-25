@@ -1,11 +1,5 @@
 package shell;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-
-import dataStructure.table.Table;
-
 public class Main {
 	public static void main(String [] args) {
 		/*String totalSql = "create table City(\r\n" +
@@ -16,7 +10,8 @@ public class Main {
 		/*String totalSql = "create table NewBook(\r\n" +
 				"id number primary key,\r\n" +
 				"name varchar(15) not null,\r\n" +
-				"cid number foreign key references City on delete set null\r\n" +
+				"cid number foreign key references City on delete set null " +
+				"on update cascade\r\n" +
 				");";*/
 
 		/*String totalSql = "ALTER TABLE City\r\n" +
@@ -31,7 +26,7 @@ public class Main {
 				"VALUES (1, '책1', 6)\r\n" +
 				"VALUES (2, '책2', 1);";*/
 
-		/*String totalSql = "UPDATE City\r\n"+
+		String totalSql = "UPDATE City\r\n"+
 						"SET id = 7\r\n"+
 						"WHERE name = '인천'";
 
@@ -40,10 +35,10 @@ public class Main {
 			command = command.trim();
 			Handler handler = new Handler(command);
 			handler.interpreter();
-		}*/
+		}
 
 		//테스트용
-		try(ObjectInputStream oi =
+		/*try(ObjectInputStream oi =
 			new ObjectInputStream(new FileInputStream("NewBook.bin"))) {
 			Table table = (Table)oi.readObject();
 			table.printTableInfo();
@@ -53,6 +48,6 @@ public class Main {
 		}
 		catch(ClassNotFoundException e) {
 			e.printStackTrace();
-		}
+		}*/
 	}
 }

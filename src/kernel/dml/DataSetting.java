@@ -59,9 +59,12 @@ public class DataSetting {
 					String data = seperatedData[j];
 					Attribute attribute = attributes.get(j);
 					Type type = attributeType.get(j);
+
+					// primary key들 체크
+
 					if (data != null) {
 						if (KernelUtil.isPrimaryKey(pKey, attributes.get(j).getField())) {
-							if (insertUniqueKeyCheck(data, j, tableName) == false)
+							if (insertPrimaryKeyCheck(data, j, tableName) == false)
 								throw new UniqueKeyViolatonException();
 						} else {
 							if (insertTypeCheck(type, data) == false) {
@@ -158,26 +161,30 @@ public class DataSetting {
 					int idx = pair.first;
 					if (isUpdateColumn(parseLine, whereFieldNewData, updateIdx)) {
 						if (KernelUtil.isPrimaryKey(pKey, attributes.get(idx).getField())) {
-							if (insertUniqueKeyCheck(name, idx, tableName) == false)
+							if (insertPrimaryKeyCheck(name, idx, tableName) == false)
 								throw new UniqueKeyViolatonException();
 							// 외래키 처리
-							List<String> deRefTables = table.getDeRefTables();
-							for(String deRefTable: deRefTables)
-								updateForeignkeyLogic(attributes.get(idx), deRefTable, name, whereFieldNewData);
+							List<Pair<String, String>> deRefTables = table.getDeRefInfos();
+							for(Pair<String, String> deRefTable: deRefTables)
+								updateForeignkeyLogic(attributes.get(idx), deRefTable, parseLine[idx], name);
 						}
 						parseLine[idx] = name;
 					}
 				}
+
+				//현재 테이블 업데이트
 				StringBuilder sb = new StringBuilder();
 				for (String parseData : parseLine)
 					sb.append(parseData + "\t");
 				bw.write(sb.toString() + System.lineSeparator());
 
-				// 원본 파일 삭제 및 임시 파일을 원본 파일로
+				//deRef 테이블 업데이트
+
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		// 원본 파일 삭제 및 임시 파일을 원본 파일로
 		File inputFile = new File(tableName + ".txt");
 		File tempFile = new File(tableName + "temp.txt");
 		inputFile.delete();
@@ -218,17 +225,35 @@ public class DataSetting {
 		return false;
 	}
 
-	public static boolean insertUniqueKeyCheck(String data, int idx, String tableName) {
+	public static boolean insertPrimaryKeyCheck(Table table, List<String> primaryKey, String insertData) {
+		String tableName = table.getTableName();
+		List<Attribute> attrs = table.getAttribute();
+		List<Integer> primaryKeyIdx = new ArrayList<Integer>();
+		String [] insertDataParse = insertData.split("\\s+");
+
+		// 기본키의 인덱스 추출
+		for(String pKey: primaryKey) {
+			for(int i=0; i<attrs.size(); i++) {
+				if(pKey.equalsIgnoreCase(attrs.get(i).getField())) {
+					primaryKeyIdx.add(i);
+					break;
+				}
+			}
+		}
+
 		try (BufferedReader br = new BufferedReader(new FileReader(tableName + ".txt"))) {
 			br.readLine(); // 헤더 읽기
 			String tuple;
-			while (true) {
+			while (true) { // 한 줄씩 기본키와 겹치는지 체크
 				tuple = br.readLine();
 				if (tuple == null)
 					break;
-				String[] TupleParse = tuple.trim().split("\\s+");
-				if (TupleParse[idx].equalsIgnoreCase(data))
-					return false;
+				String[] tupleParse = tuple.trim().split("\\s+");
+				int duplicatedDataCount = 0; // 기본키중 몇 개가 겹치는지 => 전부 겹치면 false
+				for(Integer idx: primaryKeyIdx) {
+					if(tupleParse[idx].equals(insertDataParse[idx])) duplicatedDataCount++;
+				}
+				if(duplicatedDataCount == primaryKey.size()) return false;
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -265,7 +290,9 @@ public class DataSetting {
 		return false;
 	}
 
-	public static void updateForeignkeyLogic(Attribute attr, String deRefTableName, String oldData, String updateData) {
+	public static void updateForeignkeyLogic(Attribute attr, Pair<String, String> deRefInfo, String oldData, String updateData) {
+		String deRefTableName = deRefInfo.first;
+		String deRefColumnName = deRefInfo.second;
 		Table deRefTable = FileUtil.readObjectFromFile(new Table(), deRefTableName + ".bin");
 		String updateDataType = attr.getType().getTypeName();
 
@@ -274,17 +301,15 @@ public class DataSetting {
 		// 몇 번째 attr을 업데이트 해야하는지 알아내기
 		int updateIdx = -1;
 		for (int i = 0; i < deRefAttributes.size(); i++) {
-			if (deRefAttributes.get(i).getField().equalsIgnoreCase(fieldName))
+			if (deRefAttributes.get(i).getField().equalsIgnoreCase(deRefColumnName))
 				updateIdx = i;
 		}
-
 		// fk참조 => restrict, set null, cascade에 따라 updateData 갱신하기
 		ForeignKey infoForeignKey = deRefAttributes.get(updateIdx).getInfoForeignKey();
-		System.out.println(deRefAttributes.get(updateIdx).getField());
 		String updateRule = infoForeignKey.getUpdateRule();
 		if (updateRule.equalsIgnoreCase("restrict"))
 			throw new NotAllowForeignKeyUpdate();
-		else if (updateRule.equalsIgnoreCase("set null")) {
+		else if (updateRule.equalsIgnoreCase("set null"))
 			updateData = insertNullLogic(updateDataType, true);
 
 		// 업데이트
@@ -314,6 +339,5 @@ public class DataSetting {
 		File tempFile = new File(deRefTableName + "temp.txt");
 		inputFile.delete();
 		tempFile.renameTo(inputFile);
-		}
 	}
 }

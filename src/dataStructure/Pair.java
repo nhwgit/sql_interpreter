@@ -1,6 +1,7 @@
 package dataStructure;
 
-public class Pair<T, U> {
+public class Pair<T, U> implements java.io.Serializable {
+	private static final long serialVersionUID = 1L;
     public T first;
     public U second;
 
