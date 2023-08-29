@@ -19,6 +19,7 @@ import dataStructure.table.Type;
 import exception.ExceedingItemException;
 import exception.InvalidSyntaxException;
 import exception.InvalidTypeException;
+import exception.NotAllowForeignKeyDelete;
 import exception.NotAllowForeignKeyUpdate;
 import exception.NotAllowNullException;
 import exception.UniqueKeyViolatonException;
@@ -63,19 +64,17 @@ public class DataSetting {
 					// primary key들 체크
 
 					if (data != null) {
+						if (insertTypeCheck(type, data) == false)
+							throw new InvalidTypeException();
 						if (KernelUtil.isPrimaryKey(pKey, attributes.get(j).getField())) {
-							if (insertPrimaryKeyCheck(data, j, tableName) == false)
+							if (insertPrimaryKeyCheck(table, pKey, data) == false)
 								throw new UniqueKeyViolatonException();
-						} else {
-							if (insertTypeCheck(type, data) == false) {
-								throw new InvalidTypeException();
-							}
 						}
 						sb.append(data + "\t");
 					} else {
 						String typeName = type.getTypeName();
 						boolean allowNull = attribute.getAllowNull();
-						String nullValue = insertNullLogic(typeName, allowNull);
+						String nullValue = translateNullLogic(typeName, allowNull);
 						sb.append(nullValue + "\t");
 					}
 				}
@@ -97,6 +96,8 @@ public class DataSetting {
 		List<Attribute> attributes = table.getAttribute();
 		List<Type> attributeType = new ArrayList<Type>();
 		List<ForeignKey> infoForeignKey = new ArrayList<ForeignKey>();
+
+		List<Pair<String, String>> deRefTablesInfo = table.getDeRefsInfo();
 		for (Attribute attr : attributes) {
 			attributeType.add(attr.getType());
 			infoForeignKey.add(attr.getInfoForeignKey());
@@ -112,7 +113,7 @@ public class DataSetting {
 			throw new InvalidSyntaxException();
 
 		String whereFieldName = null;
-		String whereFieldNewData = null;
+		String whereFieldData = null;
 
 		// where절 조건의 field가 몇 번째 field인지 찾는다.
 		int updateIdx = -1;
@@ -120,7 +121,7 @@ public class DataSetting {
 			String[] whereClauseParse = whereClause.split("\\s+");
 			whereFieldName = whereClauseParse[1];
 			if (whereClauseParse[2].equals("="))
-				whereFieldNewData = whereClauseParse[3].replaceAll("'", "");
+				whereFieldData = whereClauseParse[3].replaceAll("'", "");
 			else
 				throw new InvalidSyntaxException();
 			updateIdx = KernelUtil.findAttributeIndex(attributes, whereFieldName);
@@ -140,15 +141,16 @@ public class DataSetting {
 		// setDataAsIdx에서 set이 가능한지 type 체크를 한다.
 		for (Pair<Integer, String> pair : setDataAsIdx) {
 			int columnIdx = pair.first;
-			String columnName = pair.second;
+			String columnData = pair.second;
 			Type columnType = attributeType.get(updateIdx);
-			if (insertTypeCheck(columnType, columnName) == false)
+			if (insertTypeCheck(columnType, columnData) == false)
 				throw new InvalidTypeException();
 		}
 
 		// 데이터 업데이트
 		try (BufferedReader br = new BufferedReader(new FileReader(tableName + ".txt"));
 				BufferedWriter bw = new BufferedWriter(new FileWriter(tableName + "temp.txt"))) {
+			StringBuilder sb = new StringBuilder();
 			String line = br.readLine(); // header
 			bw.write(line + System.lineSeparator());
 			while (true) {
@@ -159,28 +161,28 @@ public class DataSetting {
 				for (Pair<Integer, String> pair : setDataAsIdx) {
 					String name = pair.second;
 					int idx = pair.first;
-					if (isUpdateColumn(parseLine, whereFieldNewData, updateIdx)) {
+					if (isUpdateColumn(parseLine, whereFieldData, updateIdx)) {
 						if (KernelUtil.isPrimaryKey(pKey, attributes.get(idx).getField())) {
-							if (insertPrimaryKeyCheck(name, idx, tableName) == false)
+							if (insertPrimaryKeyCheck(table, pKey, name) == false)
 								throw new UniqueKeyViolatonException();
 							// 외래키 처리
-							List<Pair<String, String>> deRefTables = table.getDeRefInfos();
-							for(Pair<String, String> deRefTable: deRefTables)
+							for (Pair<String, String> deRefTable : deRefTablesInfo)
 								updateForeignkeyLogic(attributes.get(idx), deRefTable, parseLine[idx], name);
 						}
 						parseLine[idx] = name;
 					}
 				}
 
-				//현재 테이블 업데이트
-				StringBuilder sb = new StringBuilder();
+				// 현재 테이블 업데이트
 				for (String parseData : parseLine)
 					sb.append(parseData + "\t");
+				sb.append("\n");
 				bw.write(sb.toString() + System.lineSeparator());
 
-				//deRef 테이블 업데이트
+				// deRef 테이블 업데이트
 
 			}
+			bw.write(sb.toString() + System.lineSeparator());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -192,10 +194,72 @@ public class DataSetting {
 	}
 
 	public static void deleteCommand(String cmd) {
+		String[] item = cmd.trim().split("\n|\r\n");
+		String[] header = item[0].trim().split("\\s+");
+		String tableName = header[1];
 
+		Table table = FileUtil.readObjectFromFile(new Table(), tableName + ".bin");
+		List<Attribute> attributes = table.getAttribute();
+		List<Pair<String, String>> deRefTablesInfo = table.getDeRefsInfo();
+
+		String whereClause = item[1];
+
+		String whereFieldName = null;
+		String whereFieldData = null;
+
+		// where절 조건의 field가 몇 번째 field인지 찾는다.
+		int updateIdx = -1;
+		if (whereClause != null) {
+			String[] whereClauseParse = whereClause.split("\\s+");
+			whereFieldName = whereClauseParse[1];
+			if (whereClauseParse[2].equals("="))
+				whereFieldData = whereClauseParse[3].replaceAll("'", "");
+			else
+				throw new InvalidSyntaxException();
+			updateIdx = KernelUtil.findAttributeIndex(attributes, whereFieldName);
+			if (updateIdx == -1)
+				throw new WrongColumnNameException();
+		}
+
+		// 데이터 업데이트
+		try (BufferedReader br = new BufferedReader(new FileReader(tableName + ".txt"));
+			BufferedWriter bw = new BufferedWriter(new FileWriter(tableName + "temp.txt"))) {
+			StringBuilder sb = new StringBuilder();
+			String line = br.readLine(); // header
+			bw.write(line + System.lineSeparator());
+			while (true) {
+				line = br.readLine();
+				if (line == null)
+					break;
+				String[] parseLine = line.split("\\s+");
+				if (parseLine[updateIdx].equals(whereFieldData)) {
+					// 외래키 삭제 루틴
+					for (Pair<String, String> deRefTable : deRefTablesInfo) {
+						deleteForeignkeyLogic(deRefTable, whereFieldData);
+					}
+					// sb에 현재 칼럼 추가하지 않고 continue
+					continue;
+				}
+				// 현재 테이블 업데이트
+				for (String parseData : parseLine)
+					sb.append(parseData + "\t");
+				sb.append("\n");
+
+				// deRef 테이블 업데이트
+
+			}
+			bw.write(sb.toString() + System.lineSeparator());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		File inputFile = new File(tableName + ".txt");
+		File tempFile = new File(tableName + "temp.txt");
+		inputFile.delete();
+		tempFile.renameTo(inputFile);
 	}
 
-	public static String insertNullLogic(String typeName, boolean allowNull) {
+	private static String translateNullLogic(String typeName, boolean allowNull) {
 		String ret = null;
 		if (allowNull == true) {
 			if (typeName.equalsIgnoreCase("NUMBER"))
@@ -207,7 +271,7 @@ public class DataSetting {
 		return ret;
 	}
 
-	public static boolean insertTypeCheck(Type type, String data) {
+	private static boolean insertTypeCheck(Type type, String data) {
 		String typeName = type.getTypeName();
 		if (typeName.equalsIgnoreCase("NUMBER")) {
 			try {
@@ -225,16 +289,16 @@ public class DataSetting {
 		return false;
 	}
 
-	public static boolean insertPrimaryKeyCheck(Table table, List<String> primaryKey, String insertData) {
+	private static boolean insertPrimaryKeyCheck(Table table, List<String> primaryKey, String insertData) {
 		String tableName = table.getTableName();
 		List<Attribute> attrs = table.getAttribute();
 		List<Integer> primaryKeyIdx = new ArrayList<Integer>();
-		String [] insertDataParse = insertData.split("\\s+");
+		String[] insertDataParse = insertData.split("\\s+");
 
 		// 기본키의 인덱스 추출
-		for(String pKey: primaryKey) {
-			for(int i=0; i<attrs.size(); i++) {
-				if(pKey.equalsIgnoreCase(attrs.get(i).getField())) {
+		for (String pKey : primaryKey) {
+			for (int i = 0; i < attrs.size(); i++) {
+				if (pKey.equalsIgnoreCase(attrs.get(i).getField())) {
 					primaryKeyIdx.add(i);
 					break;
 				}
@@ -250,10 +314,12 @@ public class DataSetting {
 					break;
 				String[] tupleParse = tuple.trim().split("\\s+");
 				int duplicatedDataCount = 0; // 기본키중 몇 개가 겹치는지 => 전부 겹치면 false
-				for(Integer idx: primaryKeyIdx) {
-					if(tupleParse[idx].equals(insertDataParse[idx])) duplicatedDataCount++;
+				for (Integer idx : primaryKeyIdx) {
+					if (tupleParse[idx].equals(insertDataParse[idx]))
+						duplicatedDataCount++;
 				}
-				if(duplicatedDataCount == primaryKey.size()) return false;
+				if (duplicatedDataCount == primaryKey.size())
+					return false;
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -261,7 +327,7 @@ public class DataSetting {
 		return true;
 	}
 
-	public static String[] parseSetData(String parseData) {
+	private static String[] parseSetData(String parseData) {
 		String[] setData = new String[2]; // (name, data)
 		String regex = "\\b(\\w+\\s+\\w+\\s+\\w+)\\b";
 
@@ -282,6 +348,16 @@ public class DataSetting {
 		return setData;
 	}
 
+	private static void parseWhereClause(String whereClause, String pWhereFieldName, String pWhereFieldNewData) {
+		String[] whereClauseParse = whereClause.split("\\s+");
+		pWhereFieldName = whereClauseParse[1];
+		System.out.println(pWhereFieldName);
+		if (whereClauseParse[2].equals("="))
+			pWhereFieldNewData = whereClauseParse[3].replaceAll("'", "");
+		else
+			throw new InvalidSyntaxException();
+	}
+
 	public static boolean isUpdateColumn(String[] parseLine, String whereName, int updateIdx) {
 		if (whereName == null)
 			return true;
@@ -290,7 +366,8 @@ public class DataSetting {
 		return false;
 	}
 
-	public static void updateForeignkeyLogic(Attribute attr, Pair<String, String> deRefInfo, String oldData, String updateData) {
+	private static void updateForeignkeyLogic(Attribute attr, Pair<String, String> deRefInfo, String oldData,
+			String updateData) {
 		String deRefTableName = deRefInfo.first;
 		String deRefColumnName = deRefInfo.second;
 		Table deRefTable = FileUtil.readObjectFromFile(new Table(), deRefTableName + ".bin");
@@ -310,7 +387,7 @@ public class DataSetting {
 		if (updateRule.equalsIgnoreCase("restrict"))
 			throw new NotAllowForeignKeyUpdate();
 		else if (updateRule.equalsIgnoreCase("set null"))
-			updateData = insertNullLogic(updateDataType, true);
+			updateData = translateNullLogic(updateDataType, true);
 
 		// 업데이트
 		try (BufferedReader br = new BufferedReader(new FileReader(deRefTableName + ".txt"));
@@ -334,6 +411,61 @@ public class DataSetting {
 			e.printStackTrace();
 		}
 
+		// 원본 파일 삭제 및 임시 파일을 원본 파일로
+		File inputFile = new File(deRefTableName + ".txt");
+		File tempFile = new File(deRefTableName + "temp.txt");
+		inputFile.delete();
+		tempFile.renameTo(inputFile);
+	}
+
+	private static void deleteForeignkeyLogic(Pair<String, String> deRefInfo, String oldData) {
+		String deRefTableName = deRefInfo.first;
+		String deRefColumnName = deRefInfo.second;
+		Table deRefTable = FileUtil.readObjectFromFile(new Table(), deRefTableName + ".bin");
+		StringBuilder sb = new StringBuilder();
+
+		List<Attribute> deRefAttributes = deRefTable.getAttribute();
+
+		// 몇 번째 attr을 삭제 해야하는지 알아내기
+		int deleteIdx = -1;
+		for (int i = 0; i < deRefAttributes.size(); i++) {
+			if (deRefAttributes.get(i).getField().equalsIgnoreCase(deRefColumnName))
+				deleteIdx = i;
+		}
+
+		String deleteDataType = deRefAttributes.get(deleteIdx).getType().getTypeName();
+
+		// on delete 값에 따른 처리
+		ForeignKey infoForeignKey = deRefAttributes.get(deleteIdx).getInfoForeignKey();
+		String deleteRule = infoForeignKey.getDeleteRule();
+		if (deleteRule.equalsIgnoreCase("restrict"))
+			throw new NotAllowForeignKeyDelete();
+
+		try (BufferedReader br = new BufferedReader(new FileReader(deRefTableName + ".txt"));
+				BufferedWriter bw = new BufferedWriter(new FileWriter(deRefTableName + "temp.txt"))) {
+			String line = br.readLine(); // header
+			bw.write(line + System.lineSeparator());
+			while (true) {
+				line = br.readLine();
+				if (line == null)
+					break;
+				String[] parseLine = line.split("\\s+");
+				String deleteCandidateData = parseLine[deleteIdx];
+				if (deleteCandidateData.equalsIgnoreCase(oldData)) {
+					if (deleteRule.equalsIgnoreCase("set null"))
+						parseLine[deleteIdx] = translateNullLogic(deleteDataType, true);
+					else if (deleteRule.equals("cascade"))
+						continue;
+				}
+
+				for (String parseData : parseLine)
+					sb.append(parseData + "\t");
+				sb.append(System.lineSeparator());
+			}
+			bw.write(sb.toString() + System.lineSeparator());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		// 원본 파일 삭제 및 임시 파일을 원본 파일로
 		File inputFile = new File(deRefTableName + ".txt");
 		File tempFile = new File(deRefTableName + "temp.txt");

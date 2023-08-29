@@ -216,7 +216,7 @@ public class DDL {
 			Path newFile = Paths.get(newName + ".bin");
 			Files.move(oldFile, newFile);
 			if (table.getPrimaryKey().size() >= 1) {
-				for (Pair<String, String> deRef : table.getDeRefInfos()) {
+				for (Pair<String, String> deRef : table.getDeRefsInfo()) {
 					String deRefTableName = deRef.first;
 					Table deRefTable = FileUtil.readObjectFromFile(new Table(), deRefTableName + ".bin");
 					for (String deRefPrimary : deRefTable.getPrimaryKey()) {
@@ -252,7 +252,7 @@ public class DDL {
 						i++;
 						break;
 					case "PRIMARY KEY":
-						if (table.getPrimaryKey().size() >= 1 && table.getDeRefInfos().size() >= 1)
+						if (table.getPrimaryKey().size() >= 1 && table.getDeRefsInfo().size() >= 1)
 							throw new DeRefAlreadyExistenceException();
 						table.addPrimaryKey(field);
 						i++;

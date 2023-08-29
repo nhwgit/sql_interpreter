@@ -26,8 +26,11 @@ public class Main {
 				"VALUES (1, '책1', 6)\r\n" +
 				"VALUES (2, '책2', 1);";*/
 
-		String totalSql = "UPDATE City\r\n"+
+		/*String totalSql = "UPDATE City\r\n"+
 						"SET id = 7\r\n"+
+						"WHERE name = '인천'";*/
+
+		String totalSql = "DELETE City\r\n"+
 						"WHERE name = '인천'";
 
 		String [] partialSql = totalSql.split(";");

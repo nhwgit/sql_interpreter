@@ -56,7 +56,7 @@ public class Table implements java.io.Serializable {
 		deRefInfos.add(deRefTable);
 	}
 
-	public List<Pair<String, String>> getDeRefInfos() {
+	public List<Pair<String, String>> getDeRefsInfo() {
 		return deRefInfos;
 	}
 
