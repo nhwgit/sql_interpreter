@@ -35,12 +35,13 @@ public class DataSetting {
 
 		Table table = FileUtil.readObjectFromFile(new Table(), tableName + ".bin");
 		List<String> pKey = table.getPrimaryKey();
-		List<Type> attributeType = new ArrayList();
+		List<Type> attributeType = new ArrayList<Type>();
 		List<Attribute> attributes = table.getAttribute();
 
 		for (Attribute attr : attributes) {
 			attributeType.add(attr.getType());
 		}
+
 		String regex = "\\(([^)]+)\\)"; // 괄호 안의 데이터만 가져온다.
 		Pattern pattern = Pattern.compile(regex);
 
@@ -97,7 +98,7 @@ public class DataSetting {
 		List<Type> attributeType = new ArrayList<Type>();
 		List<ForeignKey> infoForeignKey = new ArrayList<ForeignKey>();
 
-		List<Pair<String, String>> deRefTablesInfo = table.getDeRefsInfo();
+		List<Pair<String, List<String>>> deRefTablesInfo = table.getDeRefsInfo();
 		for (Attribute attr : attributes) {
 			attributeType.add(attr.getType());
 			infoForeignKey.add(attr.getInfoForeignKey());
@@ -166,7 +167,7 @@ public class DataSetting {
 							if (insertPrimaryKeyCheck(table, pKey, name) == false)
 								throw new UniqueKeyViolatonException();
 							// 외래키 처리
-							for (Pair<String, String> deRefTable : deRefTablesInfo)
+							for (Pair<String, List<String>> deRefTable : deRefTablesInfo)
 								updateForeignkeyLogic(attributes.get(idx), deRefTable, parseLine[idx], name);
 						}
 						parseLine[idx] = name;
@@ -200,7 +201,7 @@ public class DataSetting {
 
 		Table table = FileUtil.readObjectFromFile(new Table(), tableName + ".bin");
 		List<Attribute> attributes = table.getAttribute();
-		List<Pair<String, String>> deRefTablesInfo = table.getDeRefsInfo();
+		List<Pair<String, List<String>>> deRefTablesInfo = table.getDeRefsInfo();
 
 		String whereClause = item[1];
 
@@ -223,7 +224,7 @@ public class DataSetting {
 
 		// 데이터 업데이트
 		try (BufferedReader br = new BufferedReader(new FileReader(tableName + ".txt"));
-			BufferedWriter bw = new BufferedWriter(new FileWriter(tableName + "temp.txt"))) {
+				BufferedWriter bw = new BufferedWriter(new FileWriter(tableName + "temp.txt"))) {
 			StringBuilder sb = new StringBuilder();
 			String line = br.readLine(); // header
 			bw.write(line + System.lineSeparator());
@@ -234,8 +235,12 @@ public class DataSetting {
 				String[] parseLine = line.split("\\s+");
 				if (parseLine[updateIdx].equals(whereFieldData)) {
 					// 외래키 삭제 루틴
-					for (Pair<String, String> deRefTable : deRefTablesInfo) {
-						deleteForeignkeyLogic(deRefTable, whereFieldData);
+					// 1. 삭제할 값 구하기
+					List<Integer> pKeyIdx = findPrimaryKeyIdx(table);
+					List<String> pKeyValues = findPrimaryKeyValue(tableName, whereFieldData, updateIdx, pKeyIdx);
+					// 2. 삭제하기
+					for (Pair<String, List<String>> deRefTable : deRefTablesInfo) {
+						deleteForeignkeyLogic(deRefTable, pKeyValues);
 					}
 					// sb에 현재 칼럼 추가하지 않고 continue
 					continue;
@@ -248,7 +253,7 @@ public class DataSetting {
 				// deRef 테이블 업데이트
 
 			}
-			bw.write(sb.toString() + System.lineSeparator());
+			bw.write(sb.toString());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -366,21 +371,66 @@ public class DataSetting {
 		return false;
 	}
 
-	private static void updateForeignkeyLogic(Attribute attr, Pair<String, String> deRefInfo, String oldData,
+	private static List<Integer> findPrimaryKeyIdx(Table table) {
+		List<Attribute> attr = table.getAttribute();
+		List<String> pKeys = table.getPrimaryKey();
+		List<Integer> idx = new ArrayList<Integer>();
+
+		for (int i = 0; i < attr.size(); i++) {
+			String attrName = attr.get(i).getField();
+			for (String pKey : pKeys) {
+				if (attrName.equalsIgnoreCase(pKey)) {
+					idx.add(i);
+					continue;
+				}
+			}
+		}
+		return idx;
+	}
+
+	private static List<String> findPrimaryKeyValue(String tableName, String otherAttrValue, int otherAttrIdx,
+			List<Integer> pKeyIdx) {
+		List<String> pKeyValue = new ArrayList<String>();
+		try (BufferedReader br = new BufferedReader(new FileReader(tableName + ".txt"))) {
+			br.readLine(); // 헤더 읽기
+			while (true) {
+				String line = br.readLine();
+				if (line == null)
+					break;
+				String[] parseLine = line.split("\\s+");
+				if (parseLine[otherAttrIdx].equalsIgnoreCase(otherAttrValue)) {
+					for (Integer idx : pKeyIdx) {
+						pKeyValue.add(parseLine[idx]);
+					}
+					break;
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return pKeyValue;
+	}
+
+	private static void updateForeignkeyLogic(Attribute attr, Pair<String, List<String>> deRefInfo, String oldData,
 			String updateData) {
 		String deRefTableName = deRefInfo.first;
-		String deRefColumnName = deRefInfo.second;
+		List<String> deRefColumnName = deRefInfo.second;
 		Table deRefTable = FileUtil.readObjectFromFile(new Table(), deRefTableName + ".bin");
 		String updateDataType = attr.getType().getTypeName();
 
 		String fieldName = attr.getField();
 		List<Attribute> deRefAttributes = deRefTable.getAttribute();
+
 		// 몇 번째 attr을 업데이트 해야하는지 알아내기
-		int updateIdx = -1;
+		List<Integer> updateIdx = new ArrayList<Integer>();
 		for (int i = 0; i < deRefAttributes.size(); i++) {
-			if (deRefAttributes.get(i).getField().equalsIgnoreCase(deRefColumnName))
-				updateIdx = i;
+			String deRefAttrName = deRefAttributes.get(i).getField();
+			for(String name: deRefColumnName) {
+				if(name.equalsIgnoreCase(deRefAttrName)) updateIdx.add(i);
+			}
 		}
+
 		// fk참조 => restrict, set null, cascade에 따라 updateData 갱신하기
 		ForeignKey infoForeignKey = deRefAttributes.get(updateIdx).getInfoForeignKey();
 		String updateRule = infoForeignKey.getUpdateRule();
@@ -418,15 +468,15 @@ public class DataSetting {
 		tempFile.renameTo(inputFile);
 	}
 
-	private static void deleteForeignkeyLogic(Pair<String, String> deRefInfo, String oldData) {
+	private static void deleteForeignkeyLogic(Pair<String, List<String>> deRefInfo, List<String> oldData) {
 		String deRefTableName = deRefInfo.first;
-		String deRefColumnName = deRefInfo.second;
+		List<String> deRefColumnName = deRefInfo.second;
 		Table deRefTable = FileUtil.readObjectFromFile(new Table(), deRefTableName + ".bin");
 		StringBuilder sb = new StringBuilder();
 
 		List<Attribute> deRefAttributes = deRefTable.getAttribute();
 
-		// 몇 번째 attr을 삭제 해야하는지 알아내기
+		// 몇 번째 attr을 삭제 해야하는지 알아내기 => 수정 필요
 		int deleteIdx = -1;
 		for (int i = 0; i < deRefAttributes.size(); i++) {
 			if (deRefAttributes.get(i).getField().equalsIgnoreCase(deRefColumnName))
@@ -451,21 +501,24 @@ public class DataSetting {
 					break;
 				String[] parseLine = line.split("\\s+");
 				String deleteCandidateData = parseLine[deleteIdx];
-				if (deleteCandidateData.equalsIgnoreCase(oldData)) {
-					if (deleteRule.equalsIgnoreCase("set null"))
-						parseLine[deleteIdx] = translateNullLogic(deleteDataType, true);
-					else if (deleteRule.equals("cascade"))
-						continue;
+				for (String data : oldData) {
+					if (deleteCandidateData.equalsIgnoreCase(data)) {
+						if (deleteRule.equalsIgnoreCase("set null"))
+							parseLine[deleteIdx] = translateNullLogic(deleteDataType, true); // 여기 수정 필요
+						else if (deleteRule.equals("cascade"))
+							continue;
+					}
 				}
 
 				for (String parseData : parseLine)
 					sb.append(parseData + "\t");
 				sb.append(System.lineSeparator());
 			}
-			bw.write(sb.toString() + System.lineSeparator());
+			bw.write(sb.toString());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+
 		// 원본 파일 삭제 및 임시 파일을 원본 파일로
 		File inputFile = new File(deRefTableName + ".txt");
 		File tempFile = new File(deRefTableName + "temp.txt");

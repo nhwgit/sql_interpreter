@@ -1,5 +1,6 @@
 package dataStructure.table;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -11,8 +12,8 @@ public class Table implements java.io.Serializable {
 	private String tableName;
 	private List<String> primaryKey = new LinkedList<>();
 	private List<Attribute> attributes = new LinkedList<>();
-	private List<Pair<String, String>> deRefInfos = new LinkedList<>(); // (테이블명, 칼럼명)
-	private static final long serialVersionUID = 4L;
+	private List<Pair<String, List<String>>> deRefInfos = new LinkedList<>(); // (테이블명, 칼럼명)
+	private static final long serialVersionUID = 5L;
 
 	public void setTableName(String tableName) {
 		this.tableName = tableName;
@@ -47,16 +48,29 @@ public class Table implements java.io.Serializable {
 	}
 
 	public void addDeRefInfos(Pair<String, String> deRefTable) {
-		Iterator<Pair<String, String>> itr = deRefInfos.iterator();
+		Iterator<Pair<String, List<String>>> itr = deRefInfos.iterator();
+		String deRefTableName = deRefTable.first;
+		String deRefTableColumn = deRefTable.second;
 		while(itr.hasNext()) {
-			Pair<String, String> pair = itr.next();
-			pair.first = tableName;
-			if(tableName.equals(deRefTable)) throw new DuplicatedNameException();
+			Pair<String, List<String>> pair = itr.next();
+			if(deRefTableName.equalsIgnoreCase(pair.first)) {
+				for(String col: pair.second) {
+					if(col.equalsIgnoreCase(deRefTableColumn))
+						throw new DuplicatedNameException();
+				}
+				pair.second.add(deRefTableColumn);
+			}
 		}
-		deRefInfos.add(deRefTable);
+		List<String> tmpStringForNewElement = new ArrayList<String>();
+		tmpStringForNewElement.add(deRefTableColumn);
+		Pair<String, List<String>> tmpPairForNewElement = new Pair<String, List<String>>();
+		tmpPairForNewElement.first = deRefTableName;
+		tmpPairForNewElement.second = tmpStringForNewElement;
+
+		deRefInfos.add(tmpPairForNewElement);
 	}
 
-	public List<Pair<String, String>> getDeRefsInfo() {
+	public List<Pair<String, List<String>>> getDeRefsInfo() {
 		return deRefInfos;
 	}
 
@@ -94,9 +108,11 @@ public class Table implements java.io.Serializable {
 			}
 			System.out.println("");
 		}
-		Iterator<Pair<String, String>> itr3 = deRefInfos.iterator();
+		Iterator<Pair<String, List<String>>> itr3 = deRefInfos.iterator();
 		System.out.println("#####Dereference Table#####");
-		while(itr3.hasNext())
-			System.out.println("-"+itr3.next().first);
+		while(itr3.hasNext()) {
+			String deRefTableName = itr3.next().first;
+			System.out.println(deRefTableName);
+		}
 	}
 }

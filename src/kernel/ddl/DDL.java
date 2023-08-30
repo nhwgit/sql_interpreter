@@ -19,6 +19,7 @@ import dataStructure.table.Table;
 import dataStructure.table.Type;
 import exception.DeRefAlreadyExistenceException;
 import exception.DisableForeignKeyGenerateException;
+import exception.DuplicatedNameException;
 import exception.FileAlreadyExistenceException;
 import exception.InvalidSyntaxException;
 import exception.NotAllowAlterModifyException;
@@ -216,12 +217,12 @@ public class DDL {
 			Path newFile = Paths.get(newName + ".bin");
 			Files.move(oldFile, newFile);
 			if (table.getPrimaryKey().size() >= 1) {
-				for (Pair<String, String> deRef : table.getDeRefsInfo()) {
+				for (Pair<String, List<String>> deRef : table.getDeRefsInfo()) {
 					String deRefTableName = deRef.first;
 					Table deRefTable = FileUtil.readObjectFromFile(new Table(), deRefTableName + ".bin");
 					for (String deRefPrimary : deRefTable.getPrimaryKey()) {
 						if (deRefPrimary.equals(table.getTableName()))
-							;
+							throw new DuplicatedNameException();
 						deRefPrimary = newName;
 					}
 				}
@@ -295,6 +296,7 @@ public class DDL {
 								} else
 									break;
 							}
+
 							Pair<String, String> deRefTableContent = new Pair<String, String>(table.getTableName(),
 									field);
 							refTable.addDeRefInfos(deRefTableContent);
