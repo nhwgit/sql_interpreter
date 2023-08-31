@@ -1,13 +1,9 @@
 package dataStructure.table;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
 import exception.InvalidSyntaxException;
 
 public class ForeignKey implements java.io.Serializable{
-	private static final long serialVersionUID = 3L;
+	private static final long serialVersionUID = 4L;
 	enum Rule {
 		SET_NULL,
 		CASCADE,
@@ -15,15 +11,13 @@ public class ForeignKey implements java.io.Serializable{
 	}
 
 	private String refTable = null;
-	private List<String> refColumn = new ArrayList<String>(); // 참조 테이블의 기본키가 여러개일 수도 있으므로
+	private String refColumn = null;
 	private Rule deleteRule = Rule.RESTRICT;
 	private Rule updateRule = Rule.RESTRICT;
 
-	public ForeignKey(String refTable, List<String> refColumn, String deleteRule, String updateRule) {
+	public ForeignKey(String refTable, String refColumn, String deleteRule, String updateRule) {
 		this.refTable = refTable;
-		Iterator<String> itr = refColumn.iterator();
-		while(itr.hasNext())
-			this.refColumn.add(itr.next());
+		this.refColumn = refColumn;
 
 		this.deleteRule = parseRule(deleteRule);
 		this.updateRule = parseRule(updateRule);
@@ -41,8 +35,12 @@ public class ForeignKey implements java.io.Serializable{
 		return refTable;
 	}
 
-	public List<String> getRefColumn() {
+	public String getRefColumn() {
 		return refColumn;
+	}
+
+	public void setRefColumn(String refColumn) {
+		this.refColumn = refColumn;
 	}
 
 	public String getDeleteRule() {

@@ -19,11 +19,11 @@ import dataStructure.table.Table;
 import dataStructure.table.Type;
 import exception.DeRefAlreadyExistenceException;
 import exception.DisableForeignKeyGenerateException;
-import exception.DuplicatedNameException;
 import exception.FileAlreadyExistenceException;
 import exception.InvalidSyntaxException;
 import exception.NotAllowAlterModifyException;
 import exception.NotSupportedTypeException;
+import exception.TooManyPrimarykeyException;
 import exception.WrongColumnNameException;
 import util.FileUtil;
 import util.KernelUtil;
@@ -209,23 +209,18 @@ public class DDL {
 		}
 	}
 
-	private static void alterRenameToLogic(Table table, String cmd, String fileName) {
+	private static void alterRenameToLogic(Table table, String cmd, String fileName) { //테이블 명 변경
 		String[] cmdParse = cmd.trim().split("\\s+");
 		String newName = cmdParse[2];
+		String oldName = table.getTableName();
+		List<Attribute> attributes = table.getAttribute();
+
 		try {
 			Path oldFile = Paths.get(fileName);
 			Path newFile = Paths.get(newName + ".bin");
 			Files.move(oldFile, newFile);
-			if (table.getPrimaryKey().size() >= 1) {
-				for (Pair<String, String> deRef : table.getDeRefsInfo()) {
-					String deRefTableName = deRef.first;
-					Table deRefTable = FileUtil.readObjectFromFile(new Table(), deRefTableName + ".bin");
-					for (String deRefPrimary : deRefTable.getPrimaryKey()) {
-						if (deRefPrimary.equals(table.getTableName()))
-							throw new DuplicatedNameException();
-						deRefPrimary = newName;
-					}
-				}
+			if (table.getPrimaryKey().size() >= 1) { // 기본키가 존재할 때
+				updateAlterRenameToTable(table, oldName, newName);
 			}
 			table.setTableName(newName);
 		} catch (IOException e) {
@@ -239,6 +234,7 @@ public class DDL {
 		Type type = null;
 		boolean allowNull = true;
 		ForeignKey infoForeignKey = null;
+		Attribute attribute = new Attribute();
 		try {
 			field = item[0];
 			type = KernelUtil.typeGenerator(item[1]);
@@ -252,7 +248,7 @@ public class DDL {
 						i++;
 						break;
 					case "PRIMARY KEY":
-						if (table.getPrimaryKey().size() >= 1 && table.getDeRefsInfo().size() >= 1)
+						if (table.getPrimaryKey().size() >= 1)
 							throw new DeRefAlreadyExistenceException();
 						table.addPrimaryKey(field);
 						i++;
@@ -263,9 +259,16 @@ public class DDL {
 							i++;
 							String refTableName = item[i];
 							Table refTable = FileUtil.readObjectFromFile(new Table(), refTableName + ".bin");
-							List<String> refColumn = refTable.getPrimaryKey();
-							if (refColumn == null)
+							List<String> refColumnList = refTable.getPrimaryKey();
+							String refColumn = null;
+							if (refColumnList == null)
 								throw new DisableForeignKeyGenerateException();
+							else if(refColumnList.size() >=2) {
+								throw new TooManyPrimarykeyException();
+							}
+							else {
+								refColumn = refColumnList.get(0);
+							}
 							String deleteRule = "RESTRICT";
 							String updateRule = "RESTRICT";
 							i++;
@@ -298,7 +301,7 @@ public class DDL {
 
 							Pair<String, String> deRefTableContent = new Pair<String, String>(table.getTableName(),
 									field);
-							refTable.addDeRefInfos(deRefTableContent);
+							attribute.addDeRefInfos(deRefTableContent);
 							FileUtil.writeObjectToFile(refTable, refTableName + ".bin");
 							infoForeignKey = new ForeignKey(refTableName, refColumn, deleteRule, updateRule);
 						}
@@ -311,8 +314,29 @@ public class DDL {
 		} catch (ArrayIndexOutOfBoundsException e) {
 			e.printStackTrace();
 		}
-		table.insertAttribute(new Attribute(field, type, allowNull, infoForeignKey));
+		attribute.setField(field);
+		attribute.setType(type);
+		attribute.setAllowNull(allowNull);
+		attribute.setInfoForeignKey(infoForeignKey);
 
+		table.insertAttribute(new Attribute(field, type, allowNull, infoForeignKey)); // 이걸 setter로 바꾸자
+
+	}
+	private static void updateAlterRenameToTable(Table table, String oldName, String newName) {
+		List<Attribute> attributes = table.getAttribute();
+		for(Attribute attr: attributes) {
+			for(Pair<String, String> deRef : attr.getDeRefsInfo()) {
+				String deRefTableName = deRef.first;
+				Table deRefTable = FileUtil.readObjectFromFile(new Table(), deRefTableName + ".bin");
+				// DeRef의 칼럼명 기반으로 순회
+				List<Attribute> deRefAttrs = deRefTable.getAttribute();
+				for(Attribute deRefAttr: deRefAttrs) {
+					ForeignKey deRefTableForeignKey = deRefAttr.getInfoForeignKey();
+					if(deRefTableForeignKey.getRefColumn().equalsIgnoreCase(oldName))
+						deRefTableForeignKey.setRefColumn(newName);
+				}
+			}
+		}
 	}
 
 	private static void createIndexLogic() {
