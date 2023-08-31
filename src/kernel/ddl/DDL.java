@@ -217,7 +217,7 @@ public class DDL {
 			Path newFile = Paths.get(newName + ".bin");
 			Files.move(oldFile, newFile);
 			if (table.getPrimaryKey().size() >= 1) {
-				for (Pair<String, List<String>> deRef : table.getDeRefsInfo()) {
+				for (Pair<String, String> deRef : table.getDeRefsInfo()) {
 					String deRefTableName = deRef.first;
 					Table deRefTable = FileUtil.readObjectFromFile(new Table(), deRefTableName + ".bin");
 					for (String deRefPrimary : deRefTable.getPrimaryKey()) {
@@ -237,7 +237,6 @@ public class DDL {
 		String[] item = cmd.trim().split("\\s+|\\);");
 		String field = null;
 		Type type = null;
-		int typeSize = 0;
 		boolean allowNull = true;
 		ForeignKey infoForeignKey = null;
 		try {
@@ -301,7 +300,6 @@ public class DDL {
 									field);
 							refTable.addDeRefInfos(deRefTableContent);
 							FileUtil.writeObjectToFile(refTable, refTableName + ".bin");
-
 							infoForeignKey = new ForeignKey(refTableName, refColumn, deleteRule, updateRule);
 						}
 						break;

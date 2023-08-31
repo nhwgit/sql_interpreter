@@ -98,7 +98,7 @@ public class DataSetting {
 		List<Type> attributeType = new ArrayList<Type>();
 		List<ForeignKey> infoForeignKey = new ArrayList<ForeignKey>();
 
-		List<Pair<String, List<String>>> deRefTablesInfo = table.getDeRefsInfo();
+		List<Pair<String, String>> deRefTablesInfo = table.getDeRefsInfo();
 		for (Attribute attr : attributes) {
 			attributeType.add(attr.getType());
 			infoForeignKey.add(attr.getInfoForeignKey());
@@ -167,7 +167,7 @@ public class DataSetting {
 							if (insertPrimaryKeyCheck(table, pKey, name) == false)
 								throw new UniqueKeyViolatonException();
 							// 외래키 처리
-							for (Pair<String, List<String>> deRefTable : deRefTablesInfo)
+							for (Pair<String, String> deRefTable : deRefTablesInfo)
 								updateForeignkeyLogic(attributes.get(idx), deRefTable, parseLine[idx], name);
 						}
 						parseLine[idx] = name;
@@ -201,7 +201,7 @@ public class DataSetting {
 
 		Table table = FileUtil.readObjectFromFile(new Table(), tableName + ".bin");
 		List<Attribute> attributes = table.getAttribute();
-		List<Pair<String, List<String>>> deRefTablesInfo = table.getDeRefsInfo();
+		List<Pair<String, String>> deRefTablesInfo = table.getDeRefsInfo();
 
 		String whereClause = item[1];
 
@@ -239,7 +239,7 @@ public class DataSetting {
 					List<Integer> pKeyIdx = findPrimaryKeyIdx(table);
 					List<String> pKeyValues = findPrimaryKeyValue(tableName, whereFieldData, updateIdx, pKeyIdx);
 					// 2. 삭제하기
-					for (Pair<String, List<String>> deRefTable : deRefTablesInfo) {
+					for (Pair<String, String> deRefTable : deRefTablesInfo) {
 						deleteForeignkeyLogic(deRefTable, pKeyValues);
 					}
 					// sb에 현재 칼럼 추가하지 않고 continue
@@ -412,10 +412,10 @@ public class DataSetting {
 		return pKeyValue;
 	}
 
-	private static void updateForeignkeyLogic(Attribute attr, Pair<String, List<String>> deRefInfo, String oldData,
+	private static void updateForeignkeyLogic(Attribute attr, Pair<String, String> deRefInfo, String oldData,
 			String updateData) {
 		String deRefTableName = deRefInfo.first;
-		List<String> deRefColumnName = deRefInfo.second;
+		String deRefColumnName = deRefInfo.second;
 		Table deRefTable = FileUtil.readObjectFromFile(new Table(), deRefTableName + ".bin");
 		String updateDataType = attr.getType().getTypeName();
 
@@ -423,12 +423,10 @@ public class DataSetting {
 		List<Attribute> deRefAttributes = deRefTable.getAttribute();
 
 		// 몇 번째 attr을 업데이트 해야하는지 알아내기
-		List<Integer> updateIdx = new ArrayList<Integer>();
+		int updateIdx = -1;
 		for (int i = 0; i < deRefAttributes.size(); i++) {
-			String deRefAttrName = deRefAttributes.get(i).getField();
-			for(String name: deRefColumnName) {
-				if(name.equalsIgnoreCase(deRefAttrName)) updateIdx.add(i);
-			}
+			if (deRefAttributes.get(i).getField().equalsIgnoreCase(deRefColumnName))
+				updateIdx = i;
 		}
 
 		// fk참조 => restrict, set null, cascade에 따라 updateData 갱신하기
@@ -468,9 +466,9 @@ public class DataSetting {
 		tempFile.renameTo(inputFile);
 	}
 
-	private static void deleteForeignkeyLogic(Pair<String, List<String>> deRefInfo, List<String> oldData) {
+	private static void deleteForeignkeyLogic(Pair<String, String> deRefInfo, List<String> oldData) {
 		String deRefTableName = deRefInfo.first;
-		List<String> deRefColumnName = deRefInfo.second;
+		String deRefColumnName = deRefInfo.second;
 		Table deRefTable = FileUtil.readObjectFromFile(new Table(), deRefTableName + ".bin");
 		StringBuilder sb = new StringBuilder();
 
