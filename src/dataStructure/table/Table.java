@@ -1,5 +1,6 @@
 package dataStructure.table;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -50,6 +51,17 @@ public class Table implements java.io.Serializable {
 
 	public List<String> getPrimaryKey() {
 		return primaryKey;
+	}
+
+	public List<Integer> getPrimaryKeyIdx() {
+		List<Integer> ret = new ArrayList<Integer>();
+		for(int i=0; i<attributes.size(); i++) {
+			for(String pKey: primaryKey) {
+				if(attributes.get(i).getField().equalsIgnoreCase(pKey))
+					ret.add(i);
+			}
+		}
+		return ret;
 	}
 
 	public void printTableInfo() {

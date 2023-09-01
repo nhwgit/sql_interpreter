@@ -45,7 +45,7 @@ public class DataSetting {
 		String regex = "\\(([^)]+)\\)"; // 괄호 안의 데이터만 가져온다.
 		Pattern pattern = Pattern.compile(regex);
 
-		try (BufferedWriter br = new BufferedWriter(new FileWriter(tableName + ".txt", true))) {
+		try (BufferedWriter bw = new BufferedWriter(new FileWriter(tableName + ".txt", true))) {
 			for (int i = 1; i < item.length; i++) {
 				StringBuilder sb = new StringBuilder();
 				Matcher matcher = pattern.matcher(item[i]);
@@ -79,8 +79,8 @@ public class DataSetting {
 						sb.append(nullValue + "\t");
 					}
 				}
-				br.write(sb.toString());
-				br.newLine();
+				bw.write(sb.toString());
+				bw.newLine();
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -98,7 +98,7 @@ public class DataSetting {
 		List<Type> attributeType = new ArrayList<Type>();
 		List<ForeignKey> infoForeignKey = new ArrayList<ForeignKey>();
 
-		List<Pair<String, String>> deRefTablesInfo = table.getDeRefsInfo();
+		//List<Pair<String, String>> deRefTablesInfo = table.getDeRefsInfo();
 		for (Attribute attr : attributes) {
 			attributeType.add(attr.getType());
 			infoForeignKey.add(attr.getInfoForeignKey());
@@ -162,13 +162,16 @@ public class DataSetting {
 				for (Pair<Integer, String> pair : setDataAsIdx) {
 					String name = pair.second;
 					int idx = pair.first;
+					Attribute attr = attributes.get(idx); // 추가됨
+					List<Pair<String, String>> deRefTablesInfo = attr.getDeRefsInfo(); // 추가됨
 					if (isUpdateColumn(parseLine, whereFieldData, updateIdx)) {
 						if (KernelUtil.isPrimaryKey(pKey, attributes.get(idx).getField())) {
 							if (insertPrimaryKeyCheck(table, pKey, name) == false)
 								throw new UniqueKeyViolatonException();
 							// 외래키 처리
-							for (Pair<String, String> deRefTable : deRefTablesInfo)
-								updateForeignkeyLogic(attributes.get(idx), deRefTable, parseLine[idx], name);
+							for (Pair<String, String> deRefTable : deRefTablesInfo) {
+								updateForeignkeyLogic(attr, deRefTable, parseLine[idx], name); // 역 참조 테이블 하나씩 업데이트
+							}
 						}
 						parseLine[idx] = name;
 					}
@@ -178,12 +181,10 @@ public class DataSetting {
 				for (String parseData : parseLine)
 					sb.append(parseData + "\t");
 				sb.append("\n");
-				bw.write(sb.toString() + System.lineSeparator());
-
 				// deRef 테이블 업데이트
 
 			}
-			bw.write(sb.toString() + System.lineSeparator());
+			bw.write(sb.toString());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -201,7 +202,7 @@ public class DataSetting {
 
 		Table table = FileUtil.readObjectFromFile(new Table(), tableName + ".bin");
 		List<Attribute> attributes = table.getAttribute();
-		List<Pair<String, String>> deRefTablesInfo = table.getDeRefsInfo();
+		//List<Pair<String, String>> deRefTablesInfo = table.getDeRefsInfo();
 
 		String whereClause = item[1];
 
@@ -239,10 +240,12 @@ public class DataSetting {
 					List<Integer> pKeyIdx = findPrimaryKeyIdx(table);
 					List<String> pKeyValues = findPrimaryKeyValue(tableName, whereFieldData, updateIdx, pKeyIdx);
 					// 2. 삭제하기
-					for (Pair<String, String> deRefTable : deRefTablesInfo) {
-						deleteForeignkeyLogic(deRefTable, pKeyValues);
+					for(Attribute attr: attributes) {
+						for (Pair<String, String> deRefTable : attr.getDeRefsInfo()) {
+							deleteForeignkeyLogic(deRefTable, pKeyValues);
+						}
 					}
-					// sb에 현재 칼럼 추가하지 않고 continue
+					// string builder에 현재 칼럼 추가하지 않고 continue
 					continue;
 				}
 				// 현재 테이블 업데이트
@@ -413,7 +416,7 @@ public class DataSetting {
 	}
 
 	private static void updateForeignkeyLogic(Attribute attr, Pair<String, String> deRefInfo, String oldData,
-			String updateData) {
+			String updateData) { // 역 참조 테이블 하나씩 업데이트
 		String deRefTableName = deRefInfo.first;
 		String deRefColumnName = deRefInfo.second;
 		Table deRefTable = FileUtil.readObjectFromFile(new Table(), deRefTableName + ".bin");
@@ -474,7 +477,7 @@ public class DataSetting {
 
 		List<Attribute> deRefAttributes = deRefTable.getAttribute();
 
-		// 몇 번째 attr을 삭제 해야하는지 알아내기 => 수정 필요
+		// 몇 번째 attr을 삭제 해야하는지 알아내기
 		int deleteIdx = -1;
 		for (int i = 0; i < deRefAttributes.size(); i++) {
 			if (deRefAttributes.get(i).getField().equalsIgnoreCase(deRefColumnName))
@@ -502,7 +505,7 @@ public class DataSetting {
 				for (String data : oldData) {
 					if (deleteCandidateData.equalsIgnoreCase(data)) {
 						if (deleteRule.equalsIgnoreCase("set null"))
-							parseLine[deleteIdx] = translateNullLogic(deleteDataType, true); // 여기 수정 필요
+							parseLine[deleteIdx] = translateNullLogic(deleteDataType, true);
 						else if (deleteRule.equals("cascade"))
 							continue;
 					}

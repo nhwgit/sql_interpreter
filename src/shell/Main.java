@@ -30,15 +30,15 @@ public class Main {
 						"SET id = 7\r\n"+
 						"WHERE name = '인천'";*/
 
-		String totalSql = "DELETE City\r\n"+
-						"WHERE name = '인천'";
+		/*String totalSql = "DELETE City\r\n"+
+						"WHERE name = '인천'";*/
 
-		String [] partialSql = totalSql.split(";");
+		/*String [] partialSql = totalSql.split(";");
 		for(String command:partialSql) {
 			command = command.trim();
 			Handler handler = new Handler(command);
 			handler.interpreter();
-		}
+		}*/
 
 		//테스트용
 		/*try(ObjectInputStream oi =

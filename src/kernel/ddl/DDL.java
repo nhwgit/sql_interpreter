@@ -22,6 +22,7 @@ import exception.DisableForeignKeyGenerateException;
 import exception.FileAlreadyExistenceException;
 import exception.InvalidSyntaxException;
 import exception.NotAllowAlterModifyException;
+import exception.NotExistPrimaryKeyException;
 import exception.NotSupportedTypeException;
 import exception.TooManyPrimarykeyException;
 import exception.WrongColumnNameException;
@@ -301,7 +302,17 @@ public class DDL {
 
 							Pair<String, String> deRefTableContent = new Pair<String, String>(table.getTableName(),
 									field);
-							attribute.addDeRefInfos(deRefTableContent);
+
+							List<Integer> refTablePKeyIdx = refTable.getPrimaryKeyIdx();
+							int refTablePKeyCount = refTablePKeyIdx.size();
+							if(refTablePKeyCount > 1) throw new TooManyPrimarykeyException();
+							else if(refTablePKeyCount == 0) throw new NotExistPrimaryKeyException();
+							else { // 기본키가 하나인 경우 그 기본키를 참조하게(일단은 이렇게 구현함)
+								int deRefInfoAddAttrIdx =  refTablePKeyIdx.get(0);
+								List<Attribute> attrs = refTable.getAttribute();
+								Attribute attr = attrs.get(deRefInfoAddAttrIdx);
+								attr.addDeRefInfos(deRefTableContent);
+							}
 							FileUtil.writeObjectToFile(refTable, refTableName + ".bin");
 							infoForeignKey = new ForeignKey(refTableName, refColumn, deleteRule, updateRule);
 						}
@@ -319,7 +330,7 @@ public class DDL {
 		attribute.setAllowNull(allowNull);
 		attribute.setInfoForeignKey(infoForeignKey);
 
-		table.insertAttribute(new Attribute(field, type, allowNull, infoForeignKey)); // 이걸 setter로 바꾸자
+		table.insertAttribute(attribute);
 
 	}
 	private static void updateAlterRenameToTable(Table table, String oldName, String newName) {
