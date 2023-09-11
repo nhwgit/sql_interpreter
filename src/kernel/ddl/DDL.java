@@ -151,7 +151,6 @@ public class DDL {
 		String registerCmd = (tmp.toString()).trim();
 		System.out.println(registerCmd);
 		//newColumnRegisterLogic(table, registerCmd);
-		alterDataLogic();
 		return table;
 	}
 
