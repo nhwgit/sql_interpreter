@@ -24,7 +24,6 @@ import exception.NotAllowForeignKeyUpdate;
 import exception.NotAllowNullException;
 import exception.UniqueKeyViolatonException;
 import exception.WrongColumnNameException;
-import exception.WrongSyntaxException;
 import util.FileUtil;
 import util.KernelUtil;
 
@@ -38,7 +37,7 @@ public class DataSetting {
         String insertClause = wholeClause[0];
         String [] insertClauseParse = insertClause.split("\\s+");
         if(!(insertClauseParse[0]+' '+insertClauseParse[1]).equalsIgnoreCase("INSERT INTO"))
-        	throw new WrongSyntaxException();
+        	throw new InvalidSyntaxException();
 
 		String[] header = insertClause.trim().split("\\s+");
 		String tableName = header[2];
@@ -98,9 +97,20 @@ public class DataSetting {
 	}
 
 	public static void updateCommand(String cmd) {
+
+		Pattern pattern = Pattern.compile("UPDATE\\s+(.*)\\s+SET\\s+(.*)\\s+WHERE\\s+(.*)");
+        Matcher matcher = pattern.matcher(cmd);
+
+        if(!matcher.find()) throw new InvalidSyntaxException(); //개선 예정
+
+        String updateClause = matcher.group(1);
+        String setClause = matcher.group(2);
+        String whereClause = matcher.group(3);
+
 		String[] item = cmd.trim().split("\n|\r\n");
-		String[] header = item[0].trim().split("\\s+");
-		String tableName = header[1];
+		String[] header = updateClause.trim().split("\\s+");
+
+		String tableName = header[0];
 
 		Table table = FileUtil.readObjectFromFile(new Table(), tableName + ".bin");
 		List<String> pKey = table.getPrimaryKey();
@@ -114,14 +124,14 @@ public class DataSetting {
 			infoForeignKey.add(attr.getInfoForeignKey());
 		}
 
-		String setClause = item[1].trim();
-		String whereClause = null;
-		if (item.length >= 3)
-			whereClause = item[2].trim();
+		//String setClause = item[1].trim();
+		//String whereClause = null;
+		//if (item.length >= 3)
+		//	whereClause = item[2].trim();
 
 		String[] setClauseParse = setClause.split("\\s+");
-		if (!setClauseParse[0].equalsIgnoreCase("SET"))
-			throw new InvalidSyntaxException();
+		//if (!setClauseParse[0].equalsIgnoreCase("SET"))
+		//	throw new InvalidSyntaxException();
 
 		String whereFieldName = null;
 		String whereFieldData = null;
@@ -130,9 +140,9 @@ public class DataSetting {
 		int updateIdx = -1;
 		if (whereClause != null) {
 			String[] whereClauseParse = whereClause.split("\\s+");
-			whereFieldName = whereClauseParse[1];
-			if (whereClauseParse[2].equals("="))
-				whereFieldData = whereClauseParse[3].replaceAll("'", "");
+			whereFieldName = whereClauseParse[0];
+			if (whereClauseParse[1].equals("="))
+				whereFieldData = whereClauseParse[2].replaceAll("'", "");
 			else
 				throw new InvalidSyntaxException();
 			updateIdx = KernelUtil.findAttributeIndex(attributes, whereFieldName);
@@ -143,7 +153,7 @@ public class DataSetting {
 		// set절 조건들의 field 위치와 데이터들을 포함한 setDataAsIdx를 구성한다.
 		ArrayList<Pair<Integer, String>> setDataAsIdx = new ArrayList<Pair<Integer, String>>();
 		String[] setData = new String[2]; // (name, data)
-		for (int i = 1; i < setClauseParse.length; i += 3) {
+		for (int i = 0; i < setClauseParse.length; i += 3) {
 			setData[0] = setClauseParse[i];
 			setData[1] = setClauseParse[i + 2].replaceAll("'", "");
 			setDataAsIdx.add(new Pair(KernelUtil.findAttributeIndex(attributes, setData[0]), setData[1]));
