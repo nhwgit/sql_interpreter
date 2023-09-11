@@ -1,5 +1,11 @@
 package shell;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+
+import dataStructure.table.Table;
+
 public class Main {
 	public static void main(String [] args) {
 		/*String totalSql = "create table City(\r\n" +
@@ -14,13 +20,13 @@ public class Main {
 				"on update cascade\r\n" +
 				");";*/
 
-		String totalSql = "ALTER TABLE City\r\n" +
-						"ADD COLUMN test INTEGER";
+		/*String totalSql = "ALTER TABLE City\r\n" +
+						"ADD COLUMN test INTEGER";*/
 
-		/*String totalSql = "INSERT INTO City\r\n" +
+		String totalSql = "INSERT INTO City\r\n" +
 				"VALUES (4, '서울')\r\n" +
-				"VALUES (5, '부산')\r\n+" +
-				"VALUES (6, '인천');";*/
+				"VALUES (5, '부산')\r\n" +
+				"VALUES (6, '인천');";
 
 		/*String totalSql = "INSERT INTO NewBook\r\n" +
 				"VALUES (1, '책1', 6)\r\n" +
@@ -41,7 +47,7 @@ public class Main {
 		}
 
 		//테스트용
-		/*try(ObjectInputStream oi =
+		try(ObjectInputStream oi =
 			new ObjectInputStream(new FileInputStream("NewBook.bin"))) {
 			Table table = (Table)oi.readObject();
 			table.printTableInfo();
@@ -51,6 +57,6 @@ public class Main {
 		}
 		catch(ClassNotFoundException e) {
 			e.printStackTrace();
-		}*/
+		}
 	}
 }

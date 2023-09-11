@@ -32,7 +32,6 @@ import util.KernelUtil;
 public class DDL {
 	public static void createCommand(String cmd) {
 		int headerSize = cmd.indexOf("(");
-		int endIdx = cmd.indexOf(")");
 		String[] header = cmd.substring(0, headerSize).split(" ");
 		String type = header[1].toUpperCase();
 		String objectName = header[2];
@@ -41,7 +40,7 @@ public class DDL {
 			throw new FileAlreadyExistenceException();
 		switch (type) {
 		case "TABLE":
-			Table tableInfo = createTableLogic(cmd.substring(headerSize + 1, endIdx), objectName);
+			Table tableInfo = createTableLogic(cmd.substring(headerSize + 1), objectName);
 			FileUtil.writeObjectToFile(tableInfo, objectName + ".bin");
 			try (FileWriter fr = new FileWriter(objectName + ".txt")) {
 				List<Attribute> attributes = tableInfo.getAttribute();
@@ -65,7 +64,6 @@ public class DDL {
 
 	public static void alterCommand(String cmd) {
 		String[] item = cmd.trim().split("\\s+");
-
 
 		String type = item[1];
 		String objectName = item[2];

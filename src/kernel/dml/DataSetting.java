@@ -24,13 +24,23 @@ import exception.NotAllowForeignKeyUpdate;
 import exception.NotAllowNullException;
 import exception.UniqueKeyViolatonException;
 import exception.WrongColumnNameException;
+import exception.WrongSyntaxException;
 import util.FileUtil;
 import util.KernelUtil;
 
 public class DataSetting {
 	public static void insertCommand(String cmd) {
-		String[] item = cmd.trim().split("\n|\r\n");
-		String[] header = item[0].trim().split("\\s+");
+		String regex = "\\s*VALUES\\s*";
+		Pattern pattern = Pattern.compile(regex);
+
+        String [] wholeClause = pattern.split(cmd);
+
+        String insertClause = wholeClause[0];
+        String [] insertClauseParse = insertClause.split("\\s+");
+        if(!(insertClauseParse[0]+' '+insertClauseParse[1]).equalsIgnoreCase("INSERT INTO"))
+        	throw new WrongSyntaxException();
+
+		String[] header = insertClause.trim().split("\\s+");
 		String tableName = header[2];
 
 		Table table = FileUtil.readObjectFromFile(new Table(), tableName + ".bin");
@@ -42,13 +52,12 @@ public class DataSetting {
 			attributeType.add(attr.getType());
 		}
 
-		String regex = "\\(([^)]+)\\)"; // 괄호 안의 데이터만 가져온다.
-		Pattern pattern = Pattern.compile(regex);
-
+		regex = "\\(([^)]+)\\)"; // 괄호 안의 데이터만 가져온다.
+		pattern = Pattern.compile(regex);
 		try (BufferedWriter bw = new BufferedWriter(new FileWriter(tableName + ".txt", true))) {
-			for (int i = 1; i < item.length; i++) {
+			for (int i = 1; i < wholeClause.length; i++) {
 				StringBuilder sb = new StringBuilder();
-				Matcher matcher = pattern.matcher(item[i]);
+				Matcher matcher = pattern.matcher(wholeClause[i]);
 				String[] seperatedData;
 				if (matcher.find())
 					seperatedData = matcher.group(1).trim().split("[\\s,']+");
@@ -65,6 +74,7 @@ public class DataSetting {
 					// primary key들 체크
 
 					if (data != null) {
+						System.out.println(type.getTypeName()+"###"+data);
 						if (insertTypeCheck(type, data) == false)
 							throw new InvalidTypeException();
 						if (KernelUtil.isPrimaryKey(pKey, attributes.get(j).getField())) {
