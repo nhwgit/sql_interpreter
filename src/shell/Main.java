@@ -23,18 +23,18 @@ public class Main {
 		/*String totalSql = "ALTER TABLE City\r\n" +
 						"ADD COLUMN test INTEGER";*/
 
-		String totalSql = "INSERT INTO City\r\n" +
+		/*String totalSql = "INSERT INTO City\r\n" +
 				"VALUES (4, '서울')\r\n" +
 				"VALUES (5, '부산')\r\n" +
-				"VALUES (6, '인천');";
+				"VALUES (6, '인천');";*/
 
 		/*String totalSql = "INSERT INTO NewBook\r\n" +
 				"VALUES (1, '책1', 6)\r\n" +
 				"VALUES (2, '책2', 1);";*/
 
-		/*String totalSql = "UPDATE City\r\n"+
+		String totalSql = "UPDATE City\r\n"+
 						"SET id = 7\r\n"+
-						"WHERE name = '인천'";*/
+						"WHERE name = '인천'";
 
 		/*String totalSql = "DELETE City\r\n"+
 						"WHERE name = '인천'";*/
