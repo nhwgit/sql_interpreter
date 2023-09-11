@@ -1,5 +1,6 @@
 package util;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -41,5 +42,12 @@ public class FileUtil {
 		} catch(IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public static void updateFile(String tableName) { // 원본 파일 삭제 및 임시 파일을 원본파일로
+		File inputFile = new File(tableName + ".txt");
+		File tempFile = new File(tableName + "temp.txt");
+		inputFile.delete();
+		tempFile.renameTo(inputFile);
 	}
 }

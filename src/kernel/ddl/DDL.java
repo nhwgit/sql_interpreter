@@ -1,6 +1,7 @@
 package kernel.ddl;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -148,7 +149,9 @@ public class DDL {
 		for (int i = 2; i < cmdParse.length; i++)
 			tmp.append(cmdParse[i] + ' ');
 		String registerCmd = (tmp.toString()).trim();
-		newColumnRegisterLogic(table, registerCmd);
+		System.out.println(registerCmd);
+		//newColumnRegisterLogic(table, registerCmd);
+		alterDataLogic();
 		return table;
 	}
 
@@ -230,6 +233,37 @@ public class DDL {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	private void alterDataAddLogic(String tableName, String name) {
+		try (BufferedReader br = new BufferedReader(new FileReader(tableName + ".txt"));
+				BufferedWriter bw = new BufferedWriter(new FileWriter(tableName + "temp.txt"))) {
+
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
+		FileUtil.updateFile(tableName);
+
+	}
+
+	private void alterDataRenameLogic(String tableName, String oldName, String newName) {
+		try (BufferedReader br = new BufferedReader(new FileReader(tableName + ".txt"));
+				BufferedWriter bw = new BufferedWriter(new FileWriter(tableName + "temp.txt"))) {
+
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
+		FileUtil.updateFile(tableName);
+	}
+
+	private void alterDataDropLogic(String tableName, String name) {
+		try (BufferedReader br = new BufferedReader(new FileReader(tableName + ".txt"));
+				BufferedWriter bw = new BufferedWriter(new FileWriter(tableName + "temp.txt"))) {
+
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
+		FileUtil.updateFile(tableName);
 	}
 
 	private static void newColumnRegisterLogic(Table table, String cmd) {

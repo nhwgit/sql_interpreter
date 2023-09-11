@@ -105,7 +105,7 @@ public class DataSetting {
 		Pattern withWherePattern = Pattern.compile("UPDATE\\s+(.*)\\s+SET\\s+(.*)\\s+WHERE\\s+(.*)");
 		Pattern withoutWherePattern = Pattern.compile("UPDATE\\s+(.*)\\s+SET\\s+(.*)\\s+");
         Matcher withWhereMatcher = withWherePattern.matcher(cmd);
-        Matcher withoutWhereMatcher = withWherePattern.matcher(cmd);
+        Matcher withoutWhereMatcher = withoutWherePattern.matcher(cmd);
 
         if(withWhereMatcher.find() ) {
         	updateClause = withWhereMatcher.group(1);
@@ -546,9 +546,6 @@ public class DataSetting {
 		}
 
 		// 원본 파일 삭제 및 임시 파일을 원본 파일로
-		File inputFile = new File(deRefTableName + ".txt");
-		File tempFile = new File(deRefTableName + "temp.txt");
-		inputFile.delete();
-		tempFile.renameTo(inputFile);
+		FileUtil.updateFile(deRefTableName);
 	}
 }
