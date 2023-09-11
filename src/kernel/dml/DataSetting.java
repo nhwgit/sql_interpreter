@@ -98,14 +98,26 @@ public class DataSetting {
 
 	public static void updateCommand(String cmd) {
 
-		Pattern pattern = Pattern.compile("UPDATE\\s+(.*)\\s+SET\\s+(.*)\\s+WHERE\\s+(.*)");
-        Matcher matcher = pattern.matcher(cmd);
+		String updateClause = null;
+        String setClause = null;
+        String whereClause = null;
 
-        if(!matcher.find()) throw new InvalidSyntaxException(); //개선 예정
+		Pattern withWherePattern = Pattern.compile("UPDATE\\s+(.*)\\s+SET\\s+(.*)\\s+WHERE\\s+(.*)");
+		Pattern withoutWherePattern = Pattern.compile("UPDATE\\s+(.*)\\s+SET\\s+(.*)\\s+");
+        Matcher withWhereMatcher = withWherePattern.matcher(cmd);
+        Matcher withoutWhereMatcher = withWherePattern.matcher(cmd);
 
-        String updateClause = matcher.group(1);
-        String setClause = matcher.group(2);
-        String whereClause = matcher.group(3);
+        if(withWhereMatcher.find() ) {
+        	updateClause = withWhereMatcher.group(1);
+            setClause = withWhereMatcher.group(2);
+            whereClause = withWhereMatcher.group(3);
+
+        }
+        else if(withoutWhereMatcher.find()) {
+        	updateClause = withoutWhereMatcher.group(1);
+            setClause = withoutWhereMatcher.group(2);
+        }
+        else throw new InvalidSyntaxException();
 
 		String[] item = cmd.trim().split("\n|\r\n");
 		String[] header = updateClause.trim().split("\\s+");
@@ -118,20 +130,13 @@ public class DataSetting {
 		List<Type> attributeType = new ArrayList<Type>();
 		List<ForeignKey> infoForeignKey = new ArrayList<ForeignKey>();
 
-		//List<Pair<String, String>> deRefTablesInfo = table.getDeRefsInfo();
 		for (Attribute attr : attributes) {
 			attributeType.add(attr.getType());
 			infoForeignKey.add(attr.getInfoForeignKey());
 		}
 
-		//String setClause = item[1].trim();
-		//String whereClause = null;
-		//if (item.length >= 3)
-		//	whereClause = item[2].trim();
 
 		String[] setClauseParse = setClause.split("\\s+");
-		//if (!setClauseParse[0].equalsIgnoreCase("SET"))
-		//	throw new InvalidSyntaxException();
 
 		String whereFieldName = null;
 		String whereFieldData = null;
