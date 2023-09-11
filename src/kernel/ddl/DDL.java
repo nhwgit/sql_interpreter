@@ -32,6 +32,7 @@ import util.KernelUtil;
 public class DDL {
 	public static void createCommand(String cmd) {
 		int headerSize = cmd.indexOf("(");
+		int endIdx = cmd.indexOf(")");
 		String[] header = cmd.substring(0, headerSize).split(" ");
 		String type = header[1].toUpperCase();
 		String objectName = header[2];
@@ -40,7 +41,7 @@ public class DDL {
 			throw new FileAlreadyExistenceException();
 		switch (type) {
 		case "TABLE":
-			Table tableInfo = createTableLogic(cmd.substring(headerSize + 1), objectName);
+			Table tableInfo = createTableLogic(cmd.substring(headerSize + 1, endIdx), objectName);
 			FileUtil.writeObjectToFile(tableInfo, objectName + ".bin");
 			try (FileWriter fr = new FileWriter(objectName + ".txt")) {
 				List<Attribute> attributes = tableInfo.getAttribute();
@@ -63,14 +64,18 @@ public class DDL {
 	}
 
 	public static void alterCommand(String cmd) {
-		String[] item = cmd.trim().split("\n|\r\n");
-		String header = item[0];
-		String action = item[1];
+		String[] item = cmd.trim().split("\\s+");
 
-		String[] headerParse = header.trim().split("\\s+");
 
-		String type = headerParse[1];
-		String objectName = headerParse[2];
+		String type = item[1];
+		String objectName = item[2];
+
+		StringBuilder actionBuilder = new StringBuilder();
+		for(int i=3; i<item.length; i++) {
+			actionBuilder.append(item[i] + ' ');
+		}
+
+		String action = actionBuilder.toString();
 
 		switch (type) {
 		case "TABLE":
@@ -331,8 +336,8 @@ public class DDL {
 		attribute.setInfoForeignKey(infoForeignKey);
 
 		table.insertAttribute(attribute);
-
 	}
+
 	private static void updateAlterRenameToTable(Table table, String oldName, String newName) {
 		List<Attribute> attributes = table.getAttribute();
 		for(Attribute attr: attributes) {

@@ -14,8 +14,8 @@ public class Main {
 				"on update cascade\r\n" +
 				");";*/
 
-		/*String totalSql = "ALTER TABLE City\r\n" +
-						"ADD COLUMN test INTEGER PRIMARY KEY";*/
+		String totalSql = "ALTER TABLE City\r\n" +
+						"ADD COLUMN test INTEGER";
 
 		/*String totalSql = "INSERT INTO City\r\n" +
 				"VALUES (4, '서울')\r\n" +
@@ -33,12 +33,12 @@ public class Main {
 		/*String totalSql = "DELETE City\r\n"+
 						"WHERE name = '인천'";*/
 
-		/*String [] partialSql = totalSql.split(";");
+		String [] partialSql = totalSql.split(";");
 		for(String command:partialSql) {
 			command = command.trim();
 			Handler handler = new Handler(command);
 			handler.interpreter();
-		}*/
+		}
 
 		//테스트용
 		/*try(ObjectInputStream oi =
