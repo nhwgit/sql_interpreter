@@ -97,13 +97,13 @@ public class DataSetting {
 	}
 
 	public static void updateCommand(String cmd) {
-
+		//TODO : 리펙토링 => 이 함수 및 관련 함수들 별도의 클래스로 분리 & 함수 더 잘게 쪼개기
 		String updateClause = null;
         String setClause = null;
         String whereClause = null;
 
 		Pattern withWherePattern = Pattern.compile("UPDATE\\s+(.*)\\s+SET\\s+(.*)\\s+WHERE\\s+(.*)");
-		Pattern withoutWherePattern = Pattern.compile("UPDATE\\s+(.*)\\s+SET\\s+(.*)\\s+");
+		Pattern withoutWherePattern = Pattern.compile("UPDATE\\s+(.*)\\s+SET\\s+(.*)");
         Matcher withWhereMatcher = withWherePattern.matcher(cmd);
         Matcher withoutWhereMatcher = withoutWherePattern.matcher(cmd);
 
@@ -111,7 +111,6 @@ public class DataSetting {
         	updateClause = withWhereMatcher.group(1);
             setClause = withWhereMatcher.group(2);
             whereClause = withWhereMatcher.group(3);
-
         }
         else if(withoutWhereMatcher.find()) {
         	updateClause = withoutWhereMatcher.group(1);

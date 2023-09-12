@@ -127,7 +127,7 @@ public class DDL {
 		case "RENAME":
 			String judge = cmd.substring(index + 1, index + 3);
 			if (judge.equalsIgnoreCase("TO"))
-				alterRenameToLogic(table, cmd, fileName); // 테이블명 변경
+				alterRenameToLogic(table, cmd); // 테이블명 변경
 			else
 				alterRenameLogic(table, cmd); // 칼럼명 변경
 			break;
@@ -150,7 +150,11 @@ public class DDL {
 			tmp.append(cmdParse[i] + ' ');
 		String registerCmd = (tmp.toString()).trim();
 		System.out.println(registerCmd);
-		//newColumnRegisterLogic(table, registerCmd);
+		newColumnRegisterLogic(table, registerCmd);
+
+		String tableName = table.getTableName();
+		String addColumnName = cmdParse[2];
+
 		return table;
 	}
 
@@ -215,16 +219,21 @@ public class DDL {
 		}
 	}
 
-	private static void alterRenameToLogic(Table table, String cmd, String fileName) { //테이블 명 변경
+	private static void alterRenameToLogic(Table table, String cmd) { //테이블 명 변경
 		String[] cmdParse = cmd.trim().split("\\s+");
 		String newName = cmdParse[2];
 		String oldName = table.getTableName();
 		List<Attribute> attributes = table.getAttribute();
 
 		try {
-			Path oldFile = Paths.get(fileName);
+			Path oldFile = Paths.get(oldName + ".bin");
 			Path newFile = Paths.get(newName + ".bin");
 			Files.move(oldFile, newFile);
+
+			Path oldTxtFile = Paths.get(oldName + ".txt");
+			Path newTxtFile = Paths.get(newName + ".txt");
+			Files.move(oldTxtFile, newTxtFile);
+
 			if (table.getPrimaryKey().size() >= 1) { // 기본키가 존재할 때
 				updateAlterRenameToTable(table, oldName, newName);
 			}
@@ -234,21 +243,42 @@ public class DDL {
 		}
 	}
 
-	private void alterDataAddLogic(String tableName, String name) {
+	private void alterDataAddLogic(String tableName, String newColumnName, String typeName) {
 		try (BufferedReader br = new BufferedReader(new FileReader(tableName + ".txt"));
 				BufferedWriter bw = new BufferedWriter(new FileWriter(tableName + "temp.txt"))) {
+			String line = br.readLine();
+			bw.write(line + '\t' + newColumnName + System.lineSeparator());
 
+			String nullData = null;
+			if(typeName.equals("INTEGER")) nullData = "0";
+			else if(typeName.equals("VARCHAR")) nullData = "NULL";
+			while (true) {
+				line = br.readLine();
+				bw.write(line + nullData + '\t' + System.lineSeparator());
+			}
 		} catch(IOException e) {
 			e.printStackTrace();
 		}
 		FileUtil.updateFile(tableName);
-
 	}
 
 	private void alterDataRenameLogic(String tableName, String oldName, String newName) {
 		try (BufferedReader br = new BufferedReader(new FileReader(tableName + ".txt"));
 				BufferedWriter bw = new BufferedWriter(new FileWriter(tableName + "temp.txt"))) {
+			String header = br.readLine();
+			String [] headerParse = header.trim().split("\\s+");
 
+			for(String item: headerParse) {
+				if(item.equalsIgnoreCase(oldName))
+					bw.write(newName + '\t');
+				else
+					bw.write(item);
+			}
+
+			while (true) {
+				String line = br.readLine();
+				bw.write(line + System.lineSeparator());
+			}
 		} catch(IOException e) {
 			e.printStackTrace();
 		}
@@ -258,6 +288,28 @@ public class DDL {
 	private void alterDataDropLogic(String tableName, String name) {
 		try (BufferedReader br = new BufferedReader(new FileReader(tableName + ".txt"));
 				BufferedWriter bw = new BufferedWriter(new FileWriter(tableName + "temp.txt"))) {
+
+			String header = br.readLine();
+			String [] headerParse = header.trim().split("\\s+");
+
+			int dropIdx = -1;
+
+			for(int i=0; i<headerParse.length; i++) {
+				if(headerParse[i].equalsIgnoreCase(name))
+					dropIdx = i;
+				else
+					bw.write(name + '\t');
+			}
+
+			while (true) {
+				String line = br.readLine();
+				String [] lineParse = line.trim().split("\\s+");
+				for(int i=0; i<lineParse.length; i++) {
+					if(i==dropIdx) continue;
+					bw.write(lineParse[i] + '\t');
+				}
+				bw.write(System.lineSeparator());
+			}
 
 		} catch(IOException e) {
 			e.printStackTrace();

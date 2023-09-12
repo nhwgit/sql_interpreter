@@ -24,7 +24,7 @@ public class DataSearching {
 	public void QueryProcessing() {
 		String [] wholeQuery = query.split("MINUS");
 		String presentQuery = wholeQuery[0];
-		String [] statement = presentQuery.split("\r\n|\n"); // 공백문자 기준으로 바꾸자.
+		String [] statement = presentQuery.split("\r\n|\n"); // update문 파싱한 방법과 유사하게 바꾸자.
 		for(String line : statement) {
 			if		(line.startsWith("SELECT")) selectStatement = line;
 			else if (line.startsWith("FROM")) fromStatement = line;
