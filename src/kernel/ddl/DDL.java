@@ -23,6 +23,7 @@ import exception.DisableForeignKeyGenerateException;
 import exception.FileAlreadyExistenceException;
 import exception.InvalidSyntaxException;
 import exception.NotAllowAlterModifyException;
+import exception.NotAllowForeignKeyDelete;
 import exception.NotExistPrimaryKeyException;
 import exception.NotSupportedTypeException;
 import exception.TooManyPrimarykeyException;
@@ -31,6 +32,7 @@ import util.FileUtil;
 import util.KernelUtil;
 
 public class DDL {
+
 	public static void createCommand(String cmd) {
 		int headerSize = cmd.indexOf("(");
 		String[] header = cmd.substring(0, headerSize).split(" ");
@@ -70,7 +72,7 @@ public class DDL {
 		String objectName = item[2];
 
 		StringBuilder actionBuilder = new StringBuilder();
-		for(int i=3; i<item.length; i++) {
+		for (int i = 3; i < item.length; i++) {
 			actionBuilder.append(item[i] + ' ');
 		}
 
@@ -154,25 +156,30 @@ public class DDL {
 
 		String tableName = table.getTableName();
 		String addColumnName = cmdParse[2];
+		String addColumnType = cmdParse[3];
 
+		alterDataAddLogic(tableName, addColumnName, addColumnType);
 		return table;
 	}
 
 	private static void alterRenameLogic(Table table, String cmd) {
 		String[] cmdParse = cmd.trim().split("\\s+");
-		String existName = cmdParse[2];
+		String tableName = table.getTableName();
+		String oldName = cmdParse[2];
 		String newName = cmdParse[4];
-		List<Attribute> tableInfo = table.getAttribute();
-		for (Attribute t : tableInfo) {
-			if (t.getField().equals(existName)) {
-				t.setField(newName);
-				List<String> pms = table.getPrimaryKey();
-				for (String pm : pms) {
-					if (pm.equals(existName))
-						pm = newName;
+		List<Attribute> attrs = table.getAttribute();
+		for (Attribute attr : attrs) {
+			if (attr.getField().equals(oldName)) {
+				attr.setField(newName);
+				List<String> pKeys = table.getPrimaryKey();
+				for (String pKey : pKeys) {
+					if (pKey.equals(oldName))
+						pKey = newName;
 				}
+				updateAlterRenameTable(attr, oldName, newName);
 			}
 		}
+		alterDataRenameLogic(tableName, oldName, newName);
 	}
 
 	private static void alterModifyLogic(Table table, String cmd) {
@@ -181,11 +188,12 @@ public class DDL {
 		String newType = cmdParse[3];
 		Type type = null;
 
-		//테이블에 이미 데이터가 있을 경우 타입 변경 불허
+		// 테이블에 이미 데이터가 있을 경우 타입 변경 불허
 		try (BufferedReader br = new BufferedReader(new FileReader(table.getTableName() + ".txt"))) {
 			br.readLine();
-			if(br.readLine() != null) throw new NotAllowAlterModifyException();
-		} catch(IOException e) {
+			if (br.readLine() != null)
+				throw new NotAllowAlterModifyException();
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
@@ -202,12 +210,14 @@ public class DDL {
 
 	private static void alterDropLogic(Table table, String cmd) {
 		String[] cmdParse = cmd.trim().split("\\s+");
+		String tableName = table.getTableName();
 		String columnName = cmdParse[2];
 		List<Attribute> tableInfo = table.getAttribute();
 		Iterator<Attribute> itr = tableInfo.iterator();
 		while (itr.hasNext()) {
-			Attribute element = itr.next();
-			if (element.getField().equals(columnName)) {
+			Attribute attr = itr.next();
+			if (attr.getField().equals(columnName)) {
+				if(attr.getDeRefsInfo()!=null) throw new NotAllowForeignKeyDelete();
 				itr.remove();
 				List<String> primaryKeys = table.getPrimaryKey();
 				Iterator<String> itr2 = primaryKeys.iterator();
@@ -217,9 +227,10 @@ public class DDL {
 				}
 			}
 		}
+		alterDataDropLogic(tableName, columnName);
 	}
 
-	private static void alterRenameToLogic(Table table, String cmd) { //테이블 명 변경
+	private static void alterRenameToLogic(Table table, String cmd) { // 테이블 명 변경
 		String[] cmdParse = cmd.trim().split("\\s+");
 		String newName = cmdParse[2];
 		String oldName = table.getTableName();
@@ -243,33 +254,35 @@ public class DDL {
 		}
 	}
 
-	private void alterDataAddLogic(String tableName, String newColumnName, String typeName) {
+	private static void alterDataAddLogic(String tableName, String newColumnName, String typeName) {
 		try (BufferedReader br = new BufferedReader(new FileReader(tableName + ".txt"));
 				BufferedWriter bw = new BufferedWriter(new FileWriter(tableName + "temp.txt"))) {
 			String line = br.readLine();
 			bw.write(line + '\t' + newColumnName + System.lineSeparator());
 
 			String nullData = null;
-			if(typeName.equals("INTEGER")) nullData = "0";
-			else if(typeName.equals("VARCHAR")) nullData = "NULL";
+			if (typeName.equals("INTEGER"))
+				nullData = "0";
+			else if (typeName.equals("VARCHAR"))
+				nullData = "NULL";
 			while (true) {
 				line = br.readLine();
 				bw.write(line + nullData + '\t' + System.lineSeparator());
 			}
-		} catch(IOException e) {
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		FileUtil.updateFile(tableName);
 	}
 
-	private void alterDataRenameLogic(String tableName, String oldName, String newName) {
+	private static void alterDataRenameLogic(String tableName, String oldName, String newName) {
 		try (BufferedReader br = new BufferedReader(new FileReader(tableName + ".txt"));
 				BufferedWriter bw = new BufferedWriter(new FileWriter(tableName + "temp.txt"))) {
 			String header = br.readLine();
-			String [] headerParse = header.trim().split("\\s+");
+			String[] headerParse = header.trim().split("\\s+");
 
-			for(String item: headerParse) {
-				if(item.equalsIgnoreCase(oldName))
+			for (String item : headerParse) {
+				if (item.equalsIgnoreCase(oldName))
 					bw.write(newName + '\t');
 				else
 					bw.write(item);
@@ -279,23 +292,23 @@ public class DDL {
 				String line = br.readLine();
 				bw.write(line + System.lineSeparator());
 			}
-		} catch(IOException e) {
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		FileUtil.updateFile(tableName);
 	}
 
-	private void alterDataDropLogic(String tableName, String name) {
+	private static void alterDataDropLogic(String tableName, String name) {
 		try (BufferedReader br = new BufferedReader(new FileReader(tableName + ".txt"));
 				BufferedWriter bw = new BufferedWriter(new FileWriter(tableName + "temp.txt"))) {
 
 			String header = br.readLine();
-			String [] headerParse = header.trim().split("\\s+");
+			String[] headerParse = header.trim().split("\\s+");
 
 			int dropIdx = -1;
 
-			for(int i=0; i<headerParse.length; i++) {
-				if(headerParse[i].equalsIgnoreCase(name))
+			for (int i = 0; i < headerParse.length; i++) {
+				if (headerParse[i].equalsIgnoreCase(name))
 					dropIdx = i;
 				else
 					bw.write(name + '\t');
@@ -303,15 +316,16 @@ public class DDL {
 
 			while (true) {
 				String line = br.readLine();
-				String [] lineParse = line.trim().split("\\s+");
-				for(int i=0; i<lineParse.length; i++) {
-					if(i==dropIdx) continue;
+				String[] lineParse = line.trim().split("\\s+");
+				for (int i = 0; i < lineParse.length; i++) {
+					if (i == dropIdx)
+						continue;
 					bw.write(lineParse[i] + '\t');
 				}
 				bw.write(System.lineSeparator());
 			}
 
-		} catch(IOException e) {
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		FileUtil.updateFile(tableName);
@@ -352,17 +366,16 @@ public class DDL {
 							String refColumn = null;
 							if (refColumnList == null)
 								throw new DisableForeignKeyGenerateException();
-							else if(refColumnList.size() >=2) {
+							else if (refColumnList.size() >= 2) {
 								throw new TooManyPrimarykeyException();
-							}
-							else {
+							} else {
 								refColumn = refColumnList.get(0);
 							}
 							String deleteRule = "RESTRICT";
 							String updateRule = "RESTRICT";
 							i++;
 							// 아래 코드 중복된거 간결화 예정
-							while (i < item.length-1) {
+							while (i < item.length - 1) {
 								if ((item[i] + " " + item[i + 1]).equalsIgnoreCase("ON DELETE")) {
 									i += 2;
 									if (item[i].equalsIgnoreCase("CASCADE")) {
@@ -393,10 +406,12 @@ public class DDL {
 
 							List<Integer> refTablePKeyIdx = refTable.getPrimaryKeyIdx();
 							int refTablePKeyCount = refTablePKeyIdx.size();
-							if(refTablePKeyCount > 1) throw new TooManyPrimarykeyException();
-							else if(refTablePKeyCount == 0) throw new NotExistPrimaryKeyException();
+							if (refTablePKeyCount > 1)
+								throw new TooManyPrimarykeyException();
+							else if (refTablePKeyCount == 0)
+								throw new NotExistPrimaryKeyException();
 							else { // 기본키가 하나인 경우 그 기본키를 참조하게(일단은 이렇게 구현함)
-								int deRefInfoAddAttrIdx =  refTablePKeyIdx.get(0);
+								int deRefInfoAddAttrIdx = refTablePKeyIdx.get(0);
 								List<Attribute> attrs = refTable.getAttribute();
 								Attribute attr = attrs.get(deRefInfoAddAttrIdx);
 								attr.addDeRefInfos(deRefTableContent);
@@ -423,17 +438,31 @@ public class DDL {
 
 	private static void updateAlterRenameToTable(Table table, String oldName, String newName) {
 		List<Attribute> attributes = table.getAttribute();
-		for(Attribute attr: attributes) {
-			for(Pair<String, String> deRef : attr.getDeRefsInfo()) {
+		for (Attribute attr : attributes) {
+			for (Pair<String, String> deRef : attr.getDeRefsInfo()) {
 				String deRefTableName = deRef.first;
 				Table deRefTable = FileUtil.readObjectFromFile(new Table(), deRefTableName + ".bin");
 				// DeRef의 칼럼명 기반으로 순회
 				List<Attribute> deRefAttrs = deRefTable.getAttribute();
-				for(Attribute deRefAttr: deRefAttrs) {
+				for (Attribute deRefAttr : deRefAttrs) {
 					ForeignKey deRefTableForeignKey = deRefAttr.getInfoForeignKey();
-					if(deRefTableForeignKey.getRefColumn().equalsIgnoreCase(oldName))
-						deRefTableForeignKey.setRefColumn(newName);
+					if (deRefTableForeignKey.getRefTable().equalsIgnoreCase(oldName))
+						deRefTableForeignKey.setRefTable(newName);
 				}
+			}
+		}
+	}
+
+	private static void updateAlterRenameTable(Attribute attr, String oldName, String newName) {
+		for (Pair<String, String> deRef : attr.getDeRefsInfo()) {
+			String deRefTableName = deRef.first;
+			Table deRefTable = FileUtil.readObjectFromFile(new Table(), deRefTableName + ".bin");
+			// DeRef의 칼럼명 기반으로 순회
+			List<Attribute> deRefAttrs = deRefTable.getAttribute();
+			for (Attribute deRefAttr : deRefAttrs) {
+				ForeignKey deRefTableForeignKey = deRefAttr.getInfoForeignKey();
+				if (deRefTableForeignKey.getRefColumn().equalsIgnoreCase(oldName))
+					deRefTableForeignKey.setRefColumn(newName);
 			}
 		}
 	}

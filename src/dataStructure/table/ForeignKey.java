@@ -43,6 +43,10 @@ public class ForeignKey implements java.io.Serializable{
 		this.refColumn = refColumn;
 	}
 
+	public void setRefTable(String refTable) {
+		this.refTable = refTable;
+	}
+
 	public String getDeleteRule() {
 		if(deleteRule == Rule.SET_NULL) return "SET NULL";
 		else if(deleteRule == Rule.CASCADE) return "CASCADE";
