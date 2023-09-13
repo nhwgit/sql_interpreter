@@ -45,6 +45,14 @@ public class Table implements java.io.Serializable {
 		primaryKey.add(pri);
 	}
 
+	public void setPrimaryKey(List<String> pri) {
+		primaryKey = pri;
+	}
+
+	public void setAttributes(List<Attribute> attrs) {
+		attributes = attrs;
+	}
+
 	public List<Attribute> getAttribute() {
 		return attributes;
 	}

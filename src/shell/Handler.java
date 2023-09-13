@@ -16,9 +16,18 @@ public class Handler {
 		int index = sql.indexOf(" ");
 		String command = sql.substring(0, index).toUpperCase();
 		switch(command) {
-			case "CREATE": DDL.createCommand(sql); break;
-			case "ALTER": DDL.alterCommand(sql); break;
-			case "DROP": DDL.dropCommand(sql); break;
+			case "CREATE":{
+				DDL ddl = new DDL();
+				ddl.createCommand(sql); break;
+			}
+			case "ALTER": {
+				DDL ddl = new DDL();
+				ddl.alterCommand(sql); break;
+			}
+			case "DROP": {
+				DDL ddl = new DDL();
+				ddl.dropCommand(sql); break;
+			}
 			case "INSERT": DataSetting.insertCommand(sql); break;
 			case "UPDATE": DataSetting.updateCommand(sql); break;
 			case "DELETE": DataSetting.deleteCommand(sql); break;
