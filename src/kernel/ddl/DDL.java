@@ -116,13 +116,13 @@ public class DDL {
 	public void dropCommand(String cmd) {
 		String[] item = cmd.trim().split("\\s+");
 		String type = item[1];
-		String FileName = item[2];
-		System.out.println(FileName);
-		Path filePath = Paths.get(FileName + ".bin");
+		Path binFilePath = Paths.get(originTableName + ".bin");
+		Path txtFilePath = Paths.get(originTableName + ".txt");
 		switch (type) {
 		case "TABLE":
 			try {
-				Files.delete(filePath);
+				Files.delete(binFilePath);
+				Files.delete(txtFilePath);
 			} catch (NoSuchFileException e) {
 				System.out.println("삭제하려는 파일이 없습니다.");
 			} catch (IOException e) {
