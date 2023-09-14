@@ -486,11 +486,8 @@ public class DataSetting {
 			e.printStackTrace();
 		}
 
-		// 원본 파일 삭제 및 임시 파일을 원본 파일로 TODO: 여기 리펙토링 할 때 이거 FileUtil함수로 변경
-		File inputFile = new File(deRefTableName + ".txt");
-		File tempFile = new File(deRefTableName + "temp.txt");
-		inputFile.delete();
-		tempFile.renameTo(inputFile);
+		// 원본 파일 삭제 및 임시 파일을 원본 파일로
+		FileUtil.updateFile(deRefTableName);
 	}
 
 	private static void deleteForeignkeyLogic(Pair<String, String> deRefInfo, List<String> oldData) {
