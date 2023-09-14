@@ -8,10 +8,10 @@ import dataStructure.table.Table;
 
 public class Main {
 	public static void main(String [] args) {
-		String totalSql = "create table City(\r\n" +
+		/*String totalSql = "create table City(\r\n" +
 				"id number primary key,\r\n" +
 				"name varchar(15) not null\r\n" +
-				");";
+				");";*/
 
 		/*String totalSql = "create table NewBook(\r\n" +
 				"id number primary key,\r\n" +
@@ -22,6 +22,12 @@ public class Main {
 
 		/*String totalSql = "ALTER TABLE City\r\n" +
 						"ADD COLUMN test INTEGER";*/
+
+		/*String totalSql = "ALTER TABLE City " +
+						  "RENAME COLUMN test2 TO test3";*/
+
+		String totalSql = "ALTER TABLE City " +
+						"DROP COLUMN test";
 
 		/*String totalSql = "INSERT INTO City\r\n" +
 				"VALUES (4, '서울')\r\n" +
