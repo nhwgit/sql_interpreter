@@ -78,24 +78,6 @@ public class Insert {
 		}
 	}
 
-	private boolean insertTypeCheck(Type type, String data) {
-		String typeName = type.getTypeName();
-		if (typeName.equalsIgnoreCase("NUMBER")) {
-			try {
-				Integer.parseInt(data);
-				return true;
-			} catch (NumberFormatException e) {
-				return false;
-			}
-		} else if (typeName.equalsIgnoreCase("VARCHAR")) {
-			if (data.length() > type.getTypeSize())
-				return false;
-			else
-				return true;
-		}
-		return false;
-	}
-
 	private boolean insertPrimaryKeyCheck(String insertData) {
 		List<Integer> primaryKeyIdx = new ArrayList<>();
 		String[] insertDataParse = insertData.split("\\s+");
@@ -135,17 +117,17 @@ public class Insert {
 	private String appendColumn(Attribute attr, String data) {
 		Type type = attr.getType();
 		if (data != null) {
-			if (insertTypeCheck(type, data) == false)
+			if (InsertUtil.insertTypeCheck(type, data) == false)
 				throw new InvalidTypeException();
 			if (KernelUtil.isPrimaryKey(tablePKey, attr.getField())) {
-				if (insertPrimaryKeyCheck(data) == false)
+				if (InsertUtil.insertPrimaryKeyCheck(table, data) == false)
 					throw new UniqueKeyViolatonException();
 			}
 			return data + "\t";
 		} else {
 			String typeName = type.getTypeName();
 			boolean allowNull = attr.getAllowNull();
-			String nullValue = insertUtil.translateNullLogic(typeName, allowNull);
+			String nullValue = InsertUtil.translateNullLogic(typeName, allowNull);
 			return nullValue + "\t";
 		}
 	}

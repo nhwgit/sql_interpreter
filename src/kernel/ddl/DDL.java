@@ -427,7 +427,7 @@ public class DDL {
 									break;
 							}
 
-							Pair<String, String> deRefTableContent = new Pair<String, String>(originTableName,
+							Pair<String, String> deRefTableContent = new Pair<>(originTableName,
 									field);
 
 							List<Integer> refTablePKeyIdx = refTable.getPrimaryKeyIdx();

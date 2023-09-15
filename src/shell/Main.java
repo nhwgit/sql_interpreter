@@ -29,10 +29,10 @@ public class Main {
 		/*String totalSql = "ALTER TABLE City " +
 						"DROP COLUMN test";*/
 
-		String totalSql = "INSERT INTO City " +
+		/*String totalSql = "INSERT INTO City " +
 				"VALUES (4, '서울') " +
 				"VALUES (5, '부산') " +
-				"VALUES (6, '인천');";
+				"VALUES (6, '인천');";*/
 
 		/*String totalSql = "INSERT INTO NewBook\r\n" +
 				"VALUES (1, '책1', 6)\r\n" +
@@ -42,8 +42,8 @@ public class Main {
 						"SET id = 7\r\n"+
 						"WHERE name = '인천'";*/
 
-		/*String totalSql = "DELETE City\r\n"+
-						"WHERE name = '인천'";*/
+		String totalSql = "DELETE City\r\n"+
+						"WHERE name = '인천'";
 
 		String [] partialSql = totalSql.split(";");
 		for(String command:partialSql) {
