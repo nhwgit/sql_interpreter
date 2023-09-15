@@ -51,19 +51,13 @@ public class Insert {
 	}
 
 	public void insertCommand(String cmd) {
-		List<Type> attributeType = new ArrayList<Type>();
-
-		for (Attribute attr : tableAttrs) {
-			attributeType.add(attr.getType());
-		}
-
 		String regex = "\\(([^)]+)\\)"; // 괄호 안의 데이터만 가져온다.
 		Pattern pattern = Pattern.compile(regex);
 		try (BufferedWriter bw = new BufferedWriter(new FileWriter(tableName + ".txt", true))) {
 			for (int i = 0; i < valueClause.size(); i++) {
 				StringBuilder sb = new StringBuilder();
 				Matcher matcher = pattern.matcher(valueClause.get(i));
-				String[] seperatedData;
+				String[] seperatedData; // 데이터 하나 추출
 				if (matcher.find())
 					seperatedData = matcher.group(1).trim().split("[\\s,']+");
 				else
@@ -74,25 +68,7 @@ public class Insert {
 				for (int j = 0; j < tableAttrs.size(); j++) {
 					String data = seperatedData[j];
 					Attribute attribute = tableAttrs.get(j);
-					Type type = attributeType.get(j);
-
-					// primary key들 체크
-
-					if (data != null) {
-						System.out.println(type.getTypeName() + "###" + data);
-						if (insertTypeCheck(type, data) == false)
-							throw new InvalidTypeException();
-						if (KernelUtil.isPrimaryKey(tablePKey, tableAttrs.get(j).getField())) {
-							if (insertPrimaryKeyCheck(data) == false)
-								throw new UniqueKeyViolatonException();
-						}
-						sb.append(data + "\t");
-					} else {
-						String typeName = type.getTypeName();
-						boolean allowNull = attribute.getAllowNull();
-						String nullValue = insertUtil.translateNullLogic(typeName, allowNull);
-						sb.append(nullValue + "\t");
-					}
+					sb.append(appendColumn(attribute, data));
 				}
 				bw.write(sb.toString());
 				bw.newLine();
@@ -121,7 +97,7 @@ public class Insert {
 	}
 
 	private boolean insertPrimaryKeyCheck(String insertData) {
-		List<Integer> primaryKeyIdx = new ArrayList<Integer>();
+		List<Integer> primaryKeyIdx = new ArrayList<>();
 		String[] insertDataParse = insertData.split("\\s+");
 
 		// 기본키의 인덱스 추출
@@ -154,5 +130,23 @@ public class Insert {
 			e.printStackTrace();
 		}
 		return true;
+	}
+
+	private String appendColumn(Attribute attr, String data) {
+		Type type = attr.getType();
+		if (data != null) {
+			if (insertTypeCheck(type, data) == false)
+				throw new InvalidTypeException();
+			if (KernelUtil.isPrimaryKey(tablePKey, attr.getField())) {
+				if (insertPrimaryKeyCheck(data) == false)
+					throw new UniqueKeyViolatonException();
+			}
+			return data + "\t";
+		} else {
+			String typeName = type.getTypeName();
+			boolean allowNull = attr.getAllowNull();
+			String nullValue = insertUtil.translateNullLogic(typeName, allowNull);
+			return nullValue + "\t";
+		}
 	}
 }

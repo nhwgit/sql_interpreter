@@ -26,13 +26,13 @@ public class Main {
 		/*String totalSql = "ALTER TABLE City " +
 						  "RENAME COLUMN test2 TO test3";*/
 
-		String totalSql = "ALTER TABLE City " +
-						"DROP COLUMN test";
+		/*String totalSql = "ALTER TABLE City " +
+						"DROP COLUMN test";*/
 
-		/*String totalSql = "INSERT INTO City\r\n" +
-				"VALUES (4, '서울')\r\n" +
-				"VALUES (5, '부산')\r\n" +
-				"VALUES (6, '인천');";*/
+		String totalSql = "INSERT INTO City " +
+				"VALUES (4, '서울') " +
+				"VALUES (5, '부산') " +
+				"VALUES (6, '인천');";
 
 		/*String totalSql = "INSERT INTO NewBook\r\n" +
 				"VALUES (1, '책1', 6)\r\n" +
