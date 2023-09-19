@@ -1,53 +1,80 @@
 package kernel.dml;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import dataStructure.TableData;
+import exception.InvalidSyntaxException;
 
 public class DataSearching {
-	private List<String> attribute = new LinkedList<String>();
-	private List<List<String>> table = new LinkedList<List<String>>();
 	private String query;
-	String selectStatement;
-	String fromStatement;
-	String whereStatement;
-	String groupByStatement;
-	String havingStatement;
-	String orderByStatement;
+	private String selectStatement = null;
+	private String fromStatement = null;
+	private String whereStatement = null;
+	private String groupByStatement = null;
+	private String havingStatement = null;
+	private String orderByStatement = null;
+	//부속질의 구현 안함
 
-	public DataSearching(String Query) {
+	public DataSearching(String query) {
 		this.query = query;
 	}
 
-	public void QueryProcessing() {
-		String [] wholeQuery = query.split("MINUS");
-		String presentQuery = wholeQuery[0];
-		String [] statement = presentQuery.split("\r\n|\n"); // update문 파싱한 방법과 유사하게 바꾸자.
-		for(String line : statement) {
-			if		(line.startsWith("SELECT")) selectStatement = line;
-			else if (line.startsWith("FROM")) fromStatement = line;
-		}
-		fromStatementProcessing();
-		selectStatementProcessing();
-		printTable();
+	public void queryParsing() {
+		Pattern selectPattern = Pattern.compile("SELECT\\s+(.*)\\s+FROM.*");
+		Pattern fromPattern = Pattern.compile("FROM\\s+(.*)\\s+(WHERE.*)|(GROUP BY.*)|(ORDER BY.*)|$"); // order by를 추가하면 오류.. 왜?
+		Pattern wherePattern = Pattern.compile("WHERE\\s+(.*)\\s+(GROUP BY.*)|(ORDER BY.*)|$");
+		Pattern groupByPattern = Pattern.compile("GROUP BY\\s+(.*)\\s+(HAVING.*)|(ORDER BY.*)|$");
+		Pattern havingPattern = Pattern.compile("HAVING\\s+(.*)\\s+?:(ORDER BY.*)|$");
+		Pattern orderByPattern = Pattern.compile("ORDER BY\\s+(.*)");
+
+		Matcher matcher = selectPattern.matcher(query);
+		if(matcher.find()) selectStatement = matcher.group(1);
+		else throw new InvalidSyntaxException();
+
+		matcher = fromPattern.matcher(query);
+		if(matcher.find()) fromStatement = matcher.group(1);
+		else throw new InvalidSyntaxException();
+
+		matcher = wherePattern.matcher(query);
+		if(matcher.find()) whereStatement = matcher.group(1);
+
+		matcher = groupByPattern.matcher(query);
+		if(matcher.find()) groupByStatement = matcher.group(1);
+
+		matcher = havingPattern.matcher(query);
+		if(matcher.find()) havingStatement = matcher.group(1);
+
+		matcher = orderByPattern.matcher(query);
+		if(matcher.find()) orderByStatement = matcher.group(1);
 	}
 
-	public void selectStatementProcessing() {
+	public TableData selectStatementProcessing() {
 
 	}
 
-	public void fromStatementProcessing() {
-		try (BufferedReader br = new BufferedReader(new FileReader("aaa.txt"))) { // 수정 예정
+	public void execute() {
+		TableData tabledata;
+		tabledata = fromStatementProcessing();
+		tabledata = selectStatementProcessing();
+		tabledata.printTable();
+	}
 
-		} catch(IOException e) {
-			e.printStackTrace();
-		}
+	public TableData fromStatementProcessing() {
+		String [] parseFromStatement = fromStatement.split(", ");
 	}
 
 	public void printTable() {
-
+		for(String attr: attributes) {
+			System.out.println(attr + '\t');
+		}
+		for(List<String> column: table) {
+			for(String item: column) {
+				System.out.println(item + '\t');
+			}
+			System.out.println('\n');
+		}
 	}
 
 }

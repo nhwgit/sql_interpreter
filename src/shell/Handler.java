@@ -1,8 +1,8 @@
 package shell;
 
 import exception.InvalidSyntaxException;
-import kernel.DCL;
 import kernel.ddl.DDL;
+import kernel.dml.DataSearching;
 import kernel.dml.Delete;
 import kernel.dml.Insert;
 import kernel.dml.Update;
@@ -48,7 +48,12 @@ public class Handler {
 				drop.parsingAndInit(sql);
 				drop.deleteCommand(); break;
 			}
-			case "SELECT": DCL.dclCommand(sql); break;
+			case "SELECT": {
+				DataSearching query = new DataSearching(sql);
+				query.queryParsing();
+				query.execute();
+				break;
+			}
 			default : throw new InvalidSyntaxException();
 		}
 	}
