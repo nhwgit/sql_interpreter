@@ -1,6 +1,8 @@
 package kernel.dml;
 
-import java.util.List;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,12 +24,13 @@ public class DataSearching {
 	}
 
 	public void queryParsing() {
-		Pattern selectPattern = Pattern.compile("SELECT\\s+(.*)\\s+FROM.*");
-		Pattern fromPattern = Pattern.compile("FROM\\s+(.*)\\s+(WHERE.*)|(GROUP BY.*)|(ORDER BY.*)|$"); // order by를 추가하면 오류.. 왜?
-		Pattern wherePattern = Pattern.compile("WHERE\\s+(.*)\\s+(GROUP BY.*)|(ORDER BY.*)|$");
-		Pattern groupByPattern = Pattern.compile("GROUP BY\\s+(.*)\\s+(HAVING.*)|(ORDER BY.*)|$");
-		Pattern havingPattern = Pattern.compile("HAVING\\s+(.*)\\s+?:(ORDER BY.*)|$");
-		Pattern orderByPattern = Pattern.compile("ORDER BY\\s+(.*)");
+		Pattern selectPattern = Pattern.compile("SELECT\\s+(\\S+)");
+		Pattern fromPattern = Pattern.compile("FROM\\s+(.*)");
+		Pattern wherePattern = Pattern.compile("WHERE\\s+(\\S+)");
+		Pattern groupByPattern = Pattern.compile("GROUP BY\\s+(\\S+)");
+		Pattern havingPattern = Pattern.compile("HAVING\\s+(\\S+)");
+		Pattern orderByPattern = Pattern.compile("ORDER BY\\s+(\\S+)");
+		//정규표현식을 이렇게 짜는 것이 최선일까?
 
 		Matcher matcher = selectPattern.matcher(query);
 		if(matcher.find()) selectStatement = matcher.group(1);
@@ -50,31 +53,36 @@ public class DataSearching {
 		if(matcher.find()) orderByStatement = matcher.group(1);
 	}
 
-	public TableData selectStatementProcessing() {
-
-	}
-
 	public void execute() {
-		TableData tabledata;
-		tabledata = fromStatementProcessing();
-		tabledata = selectStatementProcessing();
-		tabledata.printTable();
+		TableData tableData;
+		tableData = fromStatementProcessing();
+		//tabledata = selectStatementProcessing();
+		tableData.printTable();
 	}
 
 	public TableData fromStatementProcessing() {
 		String [] parseFromStatement = fromStatement.split(", ");
-	}
+		TableData retTable = null;
 
-	public void printTable() {
-		for(String attr: attributes) {
-			System.out.println(attr + '\t');
-		}
-		for(List<String> column: table) {
-			for(String item: column) {
-				System.out.println(item + '\t');
+		for(String tableName: parseFromStatement) {
+			TableData table = new TableData();
+			try (BufferedReader br = new BufferedReader(new FileReader(tableName+ ".txt"))) {
+				String header = br.readLine();
+				String [] attrs = header.split("\\s+");
+				table.setAttributes(tableName, attrs);
+				String tuple;
+				while(true) {
+					tuple = br.readLine();
+					if(tuple==null) break;
+					String [] parsedTuple = tuple.split("\\s+");
+					table.insertTuple(parsedTuple);
+				}
+			} catch(IOException e) {
+				e.printStackTrace();
 			}
-			System.out.println('\n');
+			if(retTable==null) retTable = table;
+			else retTable.mergeTable(table);
 		}
+		return retTable;
 	}
-
 }

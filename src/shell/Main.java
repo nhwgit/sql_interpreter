@@ -39,7 +39,9 @@ public class Main {
 		/*String totalSql = "DELETE City"+
 						"WHERE name = '인천'";*/
 
-		String totalSql = "SELECT * FROM employees WHERE AAA GROUP BY BBB ORDER BY CCC";
+		//String totalSql = "SELECT * FROM employees WHERE AAA GROUP BY BBB ORDER BY CCC";
+
+		String totalSql = "SELECT * FROM City, NewBook";
 
 
 		String [] partialSql = totalSql.split(";");
