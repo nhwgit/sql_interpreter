@@ -1,13 +1,17 @@
 package dataStructure;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import exception.InsertTupleException;
 
 public class TableData {
-	private List<Pair<String, String>> attributeInfo = new LinkedList<>();// (테이플, 이름)
+	private List<Pair<String, String>> attributeInfo = new LinkedList<>();// (테이플 혹은 별칭, 이름)
 	private List<List<String>> data = new LinkedList<>();
+	private int endIdx; // 집계함수 제외 끝 idx
 
 
 	public void setAttributes(String tableName, String [] attrs) {
@@ -15,6 +19,7 @@ public class TableData {
 			Pair<String, String> pair = new Pair<>(tableName, attr);
 			attributeInfo.add(pair);
 		}
+		endIdx = attributeInfo.size();
 	}
 
 	private List<Pair<String, String>> getAttributes() {
@@ -53,8 +58,56 @@ public class TableData {
 			}
 		}
 		data=newData;
+		endIdx = attributeInfo.size();
 	}
 
+	public void extractAttributes(String [] list) {
+		//추출할 idx 구한다.
+		List<Integer> extractIdx = findExtractIdx(list);
+		//추출
+		extractor(extractIdx);
+	}
+
+	private void extractor(List<Integer> extractIdx) {
+		int maxIdx = attributeInfo.size()-1;
+		 List<Integer> removeIdx = IntStream.rangeClosed(0, maxIdx)
+	                .boxed()
+	                .sorted(Collections.reverseOrder()) // 역순으로 정렬
+	                .collect(Collectors.toList());
+
+		removeIdx.removeAll(extractIdx); //extractIdx가 아닌 원소들을 제거하려고.
+        for(int i=0; i<removeIdx.size(); i++) {
+        	int rIdx = removeIdx.get(i);
+        	attributeInfo.remove(rIdx);
+        	for(List<String> tuple: data) {
+        		tuple.remove(rIdx);
+        	}
+        }
+	}
+
+	private List<Integer> findExtractIdx(String [] list) {
+		List<Integer> extractIdx = new LinkedList<>();
+		for(String item: list) {
+			if(item.equals("*")) { // *은 집계함수 제외한 모든 칼럼 가져온다.
+				for(int i=0; i<endIdx; i++)
+					extractIdx.add(i);
+			}
+			else { // attributeInfo (테이블 혹은 별칭, 이름)
+				for(int i=0; i<attributeInfo.size(); i++) {
+					String columnAlias = attributeInfo.get(i).first;
+					String columnName = attributeInfo.get(i).second;
+					String columnName2 = columnAlias+"."+columnName;
+					if(columnName.equals(item) || columnName2.equals(item)) {
+						extractIdx.add(i);
+					}
+				}
+			}
+		}
+		List<Integer> retList = extractIdx.stream().distinct()
+								.collect(Collectors.toList());
+
+		return retList;
+	}
 	public void printTable() {
 		for(Pair<String, String> attr: attributeInfo) {
 			System.out.print(attr.second+ '\t');

@@ -24,7 +24,7 @@ public class DataSearching {
 	}
 
 	public void queryParsing() {
-		Pattern selectPattern = Pattern.compile("SELECT\\s+(\\S+)");
+		Pattern selectPattern = Pattern.compile("SELECT\\s+(.*)\\s+FROM");
 		Pattern fromPattern = Pattern.compile("FROM\\s+(.*)");
 		Pattern wherePattern = Pattern.compile("WHERE\\s+(\\S+)");
 		Pattern groupByPattern = Pattern.compile("GROUP BY\\s+(\\S+)");
@@ -54,9 +54,8 @@ public class DataSearching {
 	}
 
 	public void execute() {
-		TableData tableData;
-		tableData = fromStatementProcessing();
-		//tabledata = selectStatementProcessing();
+		TableData tableData = fromStatementProcessing();
+		selectStatementProcessing(tableData);
 		tableData.printTable();
 	}
 
@@ -84,5 +83,14 @@ public class DataSearching {
 			else retTable.mergeTable(table);
 		}
 		return retTable;
+	}
+
+	public void selectStatementProcessing(TableData tableData) {
+		String [] parseSelectStatement = selectStatement.split(", ");
+		System.out.println(parseSelectStatement[0]);
+		tableData.extractAttributes(parseSelectStatement);
+	}
+
+	public void whereStatementProcessing(TableData tableData) {
 	}
 }

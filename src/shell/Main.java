@@ -2,19 +2,19 @@ package shell;
 
 public class Main {
 	public static void main(String [] args) {
-		/*String totalSql = "create table City(\r\n" +
-				"id number primary key,\r\n" +
-				"name varchar(15) not null\r\n" +
+		/*String totalSql = "create table City( " +
+				"id number primary key, " +
+				"name varchar(15) not null " +
 				");";*/
 
-		/*String totalSql = "create table NewBook(\r\n" +
-				"id number primary key,\r\n" +
-				"name varchar(15) not null,\r\n" +
+		/*String totalSql = "create table NewBook( " +
+				"id number primary key, " +
+				"name varchar(15) not null, " +
 				"cid number foreign key references City on delete set null " +
-				"on update cascade\r\n" +
+				"on update cascade " +
 				");";*/
 
-		/*String totalSql = "ALTER TABLE City\r\n" +
+		/*String totalSql = "ALTER TABLE City " +
 						"ADD COLUMN test INTEGER";*/
 
 		/*String totalSql = "ALTER TABLE City " +
@@ -29,11 +29,11 @@ public class Main {
 				"VALUES (6, '인천');";*/
 
 		/*String totalSql = "INSERT INTO NewBook" +
-				"VALUES (1, '책1', 6)\r\n" +
+				"VALUES (1, '책1', 6) " +
 				"VALUES (2, '책2', 1);";*/
 
-		/*String totalSql = "UPDATE City"+
-						"SET id = 7\r\n"+
+		/*String totalSql = "UPDATE City "+
+						"SET id = 7 "+
 						"WHERE name = '인천'";*/
 
 		/*String totalSql = "DELETE City"+
@@ -41,7 +41,7 @@ public class Main {
 
 		//String totalSql = "SELECT * FROM employees WHERE AAA GROUP BY BBB ORDER BY CCC";
 
-		String totalSql = "SELECT * FROM City, NewBook";
+		String totalSql = "SELECT id, name FROM City";
 
 
 		String [] partialSql = totalSql.split(";");
