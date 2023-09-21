@@ -65,10 +65,41 @@ public class TableData {
 		//추출할 idx 구한다.
 		List<Integer> extractIdx = findExtractIdx(list);
 		//추출
-		extractor(extractIdx);
+		attrExtractor(extractIdx);
 	}
 
-	private void extractor(List<Integer> extractIdx) {
+	private void extractTuples(String condition) {
+		String [] condParse = condition.split("\\s+");
+		String columnName = condParse[0];
+		String operator = condParse[1];
+		String criteria = condParse[2];
+		int columnIdx = findExtractIdx(columnName);
+		// table에서 type 가져오기
+		// criteria type과 일치하는지 확인
+		// = 뒤에 문자열이면 조인, 문자열 비교는 LIKE로. 부등호과 LIKE만 구현 할 것임
+		switch(operator) { // 이 함수에서 처리하면 복잡해질 것 같다.
+			case ">": {
+
+			}
+			case ">=": {
+
+			}
+			case "<": {
+
+			}
+			case "<=": {
+
+			}
+			case "=": {
+
+			}
+			case "LIKE": {
+
+			}
+		}
+	}
+
+	private void attrExtractor(List<Integer> extractIdx) {
 		int maxIdx = attributeInfo.size()-1;
 		 List<Integer> removeIdx = IntStream.rangeClosed(0, maxIdx)
 	                .boxed()
@@ -83,6 +114,18 @@ public class TableData {
         		tuple.remove(rIdx);
         	}
         }
+	}
+
+	private int findExtractIdx(String name) {
+		for(int i=0; i<attributeInfo.size(); i++) {
+			String columnAlias = attributeInfo.get(i).first;
+			String columnName = attributeInfo.get(i).second;
+			String columnName2 = columnAlias+"."+columnName;
+			if(columnName.equals(name) || columnName2.equals(name)) {
+				return i;
+			}
+		}
+		return -1;
 	}
 
 	private List<Integer> findExtractIdx(String [] list) {

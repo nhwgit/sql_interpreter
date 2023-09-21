@@ -92,5 +92,7 @@ public class DataSearching {
 	}
 
 	public void whereStatementProcessing(TableData tableData) {
+		String [] whereCondtions = whereStatement.split("\\s+and\\s+");
+		for(String cond: whereCondtions);
 	}
 }
