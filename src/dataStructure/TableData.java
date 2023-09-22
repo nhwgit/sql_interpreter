@@ -74,29 +74,27 @@ public class TableData {
 		String operator = condParse[1];
 		String criteria = condParse[2];
 		int columnIdx = findExtractIdx(columnName);
-		// table에서 type 가져오기
-		// criteria type과 일치하는지 확인
-		// = 뒤에 문자열이면 조인, 문자열 비교는 LIKE로. 부등호과 LIKE만 구현 할 것임
-		switch(operator) { // 이 함수에서 처리하면 복잡해질 것 같다.
-			case ">": {
 
-			}
-			case ">=": {
-
-			}
-			case "<": {
-
-			}
-			case "<=": {
-
-			}
-			case "=": {
-
-			}
-			case "LIKE": {
-
-			}
+		// LIKE => 문자 비교
+		if(criteria.equals("LIKE")) {
 		}
+		// 비교 연산자(= 포함) => 숫자 비교
+		else if(isComparisonOperator(criteria)) {
+
+		}
+		else {
+			//예외
+		}
+
+	}
+
+	private boolean isComparisonOperator(String criteria) {
+		List<String> comparator = List.of("<", "<=", ">", ">=", "=");
+		if(comparator.contains(criteria))
+			return true;
+		else
+			return false;
+
 	}
 
 	private void attrExtractor(List<Integer> extractIdx) {
@@ -151,7 +149,8 @@ public class TableData {
 
 		return retList;
 	}
-	public void printTable() {
+
+	public void printTableData() {
 		for(Pair<String, String> attr: attributeInfo) {
 			System.out.print(attr.second+ '\t');
 		}

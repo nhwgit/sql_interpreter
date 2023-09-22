@@ -56,7 +56,7 @@ public class DataSearching {
 	public void execute() {
 		TableData tableData = fromStatementProcessing();
 		selectStatementProcessing(tableData);
-		tableData.printTable();
+		tableData.printTableData();
 	}
 
 	public TableData fromStatementProcessing() {
