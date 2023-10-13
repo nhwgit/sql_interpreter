@@ -20,9 +20,6 @@ public class Main {
 		/*String totalSql = "ALTER TABLE City " +
 						  "RENAME COLUMN test2 TO test3";*/
 
-		/*String totalSql = "ALTER TABLE City " +
-						"DROP COLUMN test";*/
-
 		/*String totalSql = "INSERT INTO City " +
 				"VALUES (4, '서울') " +
 				"VALUES (5, '부산') " +
@@ -39,11 +36,14 @@ public class Main {
 		/*String totalSql = "DELETE City"+
 						"WHERE name = '인천'";*/
 
-		//String totalSql = "SELECT * FROM employees WHERE AAA GROUP BY BBB ORDER BY CCC";
+		String totalSql = "SELECT id, name FROM City, newBook "
+						+ "WHERE id >= 4 and id < 8 "
+						+ "and id < 8 ORDER BY name DESC";
 
-		String totalSql = "SELECT id, name FROM City";
+		//String totalSql = "SELECT id, name FROM city WHERE name LIKE 부산";
 
-
+		/*String totalSql = "ALTER TABLE City " +
+		"DROP COLUMN test";*/
 		String [] partialSql = totalSql.split(";");
 		for(String command:partialSql) {
 			command = command.trim();

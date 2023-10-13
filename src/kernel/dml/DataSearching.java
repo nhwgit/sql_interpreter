@@ -25,11 +25,11 @@ public class DataSearching {
 
 	public void queryParsing() {
 		Pattern selectPattern = Pattern.compile("SELECT\\s+(.*)\\s+FROM");
-		Pattern fromPattern = Pattern.compile("FROM\\s+(.*)");
-		Pattern wherePattern = Pattern.compile("WHERE\\s+(\\S+)");
+		Pattern fromPattern = Pattern.compile("FROM\\s+(.*)\\s+WHERE");
+		Pattern wherePattern = Pattern.compile("WHERE\\s+(.*)\\s+ORDER BY");
 		Pattern groupByPattern = Pattern.compile("GROUP BY\\s+(\\S+)");
 		Pattern havingPattern = Pattern.compile("HAVING\\s+(\\S+)");
-		Pattern orderByPattern = Pattern.compile("ORDER BY\\s+(\\S+)");
+		Pattern orderByPattern = Pattern.compile("ORDER BY\\s+(.*)");
 		//정규표현식을 이렇게 짜는 것이 최선일까?
 
 		Matcher matcher = selectPattern.matcher(query);
@@ -51,24 +51,29 @@ public class DataSearching {
 
 		matcher = orderByPattern.matcher(query);
 		if(matcher.find()) orderByStatement = matcher.group(1);
+
+		//System.out.println(whereStatement);
 	}
 
 	public void execute() {
 		TableData tableData = fromStatementProcessing();
+		if(whereStatement != null)
+			whereStatementProcessing(tableData);
+		if(orderByStatement != null)
+			orderByStatementProcessing(tableData);
 		selectStatementProcessing(tableData);
 		tableData.printTableData();
 	}
 
-	public TableData fromStatementProcessing() {
+	private TableData fromStatementProcessing() {
 		String [] parseFromStatement = fromStatement.split(", ");
 		TableData retTable = null;
 
 		for(String tableName: parseFromStatement) {
-			TableData table = new TableData();
+			TableData table = new TableData(tableName);
 			try (BufferedReader br = new BufferedReader(new FileReader(tableName+ ".txt"))) {
 				String header = br.readLine();
 				String [] attrs = header.split("\\s+");
-				table.setAttributes(tableName, attrs);
 				String tuple;
 				while(true) {
 					tuple = br.readLine();
@@ -85,14 +90,34 @@ public class DataSearching {
 		return retTable;
 	}
 
-	public void selectStatementProcessing(TableData tableData) {
+	private void selectStatementProcessing(TableData tableData) {
 		String [] parseSelectStatement = selectStatement.split(", ");
-		System.out.println(parseSelectStatement[0]);
 		tableData.extractAttributes(parseSelectStatement);
 	}
 
-	public void whereStatementProcessing(TableData tableData) {
+	private void whereStatementProcessing(TableData tableData) { // 조인 아직 구현 안함
 		String [] whereCondtions = whereStatement.split("\\s+and\\s+");
-		for(String cond: whereCondtions);
+		for(String cond: whereCondtions) {
+			tableData.extractTuples(cond);
+		}
 	}
+
+	private void orderByStatementProcessing(TableData tableData) {
+		String [] orderByInformation = orderByStatement.split("\\s+");
+		String sortColumn = orderByInformation[0];
+		String sortCriteria = null;
+		if(orderByInformation.length >=2)
+			sortCriteria = orderByInformation[1];
+
+		boolean isASC = true;
+		if(sortCriteria == null || sortCriteria.equals("ASC"))
+			isASC = true;
+		else if(sortCriteria.equals("DESC"))
+			isASC = false;
+		else
+			throw new InvalidSyntaxException();
+
+		tableData.sortTuple(sortColumn, isASC);
+	}
+
 }
