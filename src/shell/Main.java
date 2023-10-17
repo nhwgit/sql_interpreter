@@ -29,6 +29,9 @@ public class Main {
 				"VALUES (1, '책1', 6) " +
 				"VALUES (2, '책2', 1);";*/
 
+		/*String totalSql = "ALTER TABLE City " +
+		"DROP COLUMN test";*/
+
 		/*String totalSql = "UPDATE City "+
 						"SET id = 7 "+
 						"WHERE name = '인천'";*/
@@ -42,10 +45,12 @@ public class Main {
 
 		//String totalSql = "SELECT id, name FROM city WHERE name LIKE 부산";
 
+		//String totalSql = "SELECT id, name FROM City, NewBook;";
+
 		String totalSql = "SELECT id, name FROM City, NewBook " +
-						"WHERE City.id = NewBook.cid ";
-		/*String totalSql = "ALTER TABLE City " +
-		"DROP COLUMN test";*/
+						"WHERE City.id = NewBook.cid and City.id >= 7 " +
+						"ORDER BY City.name";
+
 		String [] partialSql = totalSql.split(";");
 		for(String command:partialSql) {
 			command = command.trim();
