@@ -14,6 +14,7 @@ import dataStructure.table.Table;
 import exception.InsertTupleException;
 import exception.InvalidSyntaxException;
 import util.FileUtil;
+import util.IntegerUtil;
 
 public class TableData {
 	private List<List<String>> data = new ArrayList<>();
@@ -82,6 +83,7 @@ public class TableData {
 		String columnName = condParse[0];
 		String operator = condParse[1];
 		String criteria = condParse[2];
+
 		int columnIdx = findExtractIdx(columnName);
 
 		Iterator<List<String>> itr = data.iterator();
@@ -97,11 +99,23 @@ public class TableData {
 		}
 		// 비교 연산자 => 숫자 비교
 		else if (isComparisonOperator(operator)) {
-			while (itr.hasNext()) {
-				List<String> tuple = itr.next();
-				String evlautedData = tuple.get(columnIdx);
-				if (isRemoveData(evlautedData, operator, criteria))
-					itr.remove();
+			if(IntegerUtil.isInteger(criteria)) {
+				while (itr.hasNext()) {
+					List<String> tuple = itr.next();
+					String evlautedData = tuple.get(columnIdx);
+					if (isRemoveData(evlautedData, operator, criteria))
+						itr.remove();
+				}
+			}
+			else { // 조인
+				int criteriaIdx = findExtractIdx(criteria);
+				while (itr.hasNext()) {
+					List<String> tuple = itr.next();
+					String leftData = tuple.get(columnIdx);
+					String rightData = tuple.get(criteriaIdx);
+					if (isRemoveData(leftData, operator, rightData))
+						itr.remove();
+				}
 			}
 		} else {
 			throw new InvalidSyntaxException();

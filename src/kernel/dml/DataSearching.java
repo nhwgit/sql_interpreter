@@ -26,7 +26,7 @@ public class DataSearching {
 	public void queryParsing() {
 		Pattern selectPattern = Pattern.compile("SELECT\\s+(.*)\\s+FROM");
 		Pattern fromPattern = Pattern.compile("FROM\\s+(.*)\\s+WHERE");
-		Pattern wherePattern = Pattern.compile("WHERE\\s+(.*)\\s+ORDER BY");
+		Pattern wherePattern = Pattern.compile("WHERE\\s+(.*)");
 		Pattern groupByPattern = Pattern.compile("GROUP BY\\s+(\\S+)");
 		Pattern havingPattern = Pattern.compile("HAVING\\s+(\\S+)");
 		Pattern orderByPattern = Pattern.compile("ORDER BY\\s+(.*)");
@@ -52,16 +52,15 @@ public class DataSearching {
 		matcher = orderByPattern.matcher(query);
 		if(matcher.find()) orderByStatement = matcher.group(1);
 
-		//System.out.println(whereStatement);
 	}
 
 	public void execute() {
 		TableData tableData = fromStatementProcessing();
 		if(whereStatement != null)
 			whereStatementProcessing(tableData);
+		selectStatementProcessing(tableData);
 		if(orderByStatement != null)
 			orderByStatementProcessing(tableData);
-		selectStatementProcessing(tableData);
 		tableData.printTableData();
 	}
 
@@ -95,7 +94,7 @@ public class DataSearching {
 		tableData.extractAttributes(parseSelectStatement);
 	}
 
-	private void whereStatementProcessing(TableData tableData) { // 조인 아직 구현 안함
+	private void whereStatementProcessing(TableData tableData) {
 		String [] whereCondtions = whereStatement.split("\\s+and\\s+");
 		for(String cond: whereCondtions) {
 			tableData.extractTuples(cond);
@@ -119,5 +118,4 @@ public class DataSearching {
 
 		tableData.sortTuple(sortColumn, isASC);
 	}
-
 }

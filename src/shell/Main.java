@@ -36,12 +36,14 @@ public class Main {
 		/*String totalSql = "DELETE City"+
 						"WHERE name = '인천'";*/
 
-		String totalSql = "SELECT id, name FROM City, newBook "
+		/*String totalSql = "SELECT id, name FROM City, newBook "
 						+ "WHERE id >= 4 and id < 8 "
-						+ "and id < 8 ORDER BY name DESC";
+						+ "and id < 8 ORDER BY name DESC";*/
 
 		//String totalSql = "SELECT id, name FROM city WHERE name LIKE 부산";
 
+		String totalSql = "SELECT id, name FROM City, NewBook " +
+						"WHERE City.id = NewBook.cid ";
 		/*String totalSql = "ALTER TABLE City " +
 		"DROP COLUMN test";*/
 		String [] partialSql = totalSql.split(";");
