@@ -30,7 +30,7 @@ public class DataSearching {
 		//Pattern groupByPattern = Pattern.compile("GROUP BY\\s+(\\S+)"); //ver2에서 구현 예정
 		//Pattern havingPattern = Pattern.compile("HAVING\\s+(\\S+)"); // ver2에서 구현 예정
 		Pattern orderByPattern = Pattern.compile("ORDER BY\\s+(.*)");
-		//정규표현식을 이렇게 짜는 것이 최선일까?
+		//정규표현식을 이렇게 짜는 것이 최선일까? 정말 트리까지 만들어서 처리해야할까
 
 		Matcher matcher = selectPattern.matcher(query);
 		if(matcher.find()) selectStatement = matcher.group(1);
