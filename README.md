@@ -1,6 +1,15 @@
 # sql interpreter
 메모장 기반 SQL 인터프리터를 개발했습니다. CREATE, ALTER, DROP, INSERT, UPDATE, DELETE, SELECT, FROM, WHERE(JOIN 포함), ORDER BY 등 핵심 SQL 명령어를 직접 구현했으며, NOT NULL, PRIMARY KEY, FOREIGN KEY 등의 제약 조건도 구현 했습니다.
 
+실행 환경: Java 17
+
+실행 방법
+1. 루트의 sql_interpreter.jar 실행
+java -jar sql_interpreter.jar
+
+2. 소스코드 실행
+- main클래스: shell/Main.java 
+
 입력 예시
 
 create table City( 
